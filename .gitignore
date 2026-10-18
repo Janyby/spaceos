@@ -1,0 +1,57 @@
+# Build outputs
+/target/
+/target-agent-staging/
+**/target/
+# Runtime and user data
+/CRASH/
+/logs/
+/data/
+/chrome/
+/chrome-profile/
+/runtime/*.json
+/runtime/*.err
+/runtime/*.out
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.log
+*.dmp
+*.dump
+*.tmp
+*.temp
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+!.env.sample
+*.token
+*.pem
+*.key
+*.pfx
+*.p12
+/opencode.json
+/.aws/
+/.codex/
+/.agents/
+/.vscode/
+/.idea/
+# Browser/session artifacts
+**/Cookies
+**/Cookies-journal
+**/Login Data
+**/Login Data-journal
+**/Web Data
+**/Web Data-journal
+**/Local State
+**/Sessions/
+# Local references and old prompts
+/UI_custom/
+/reference_ui/
+/spaceosprompt/
+# OS/editor artifacts
+Thumbs.db
+.DS_Store
+*~

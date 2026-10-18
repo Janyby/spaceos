@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpaceOS World</title>
+<style>
+    :root {
+        --bg: #02060d;
+        --ink: #eef6ff;
+        --muted: #9fb3cf;
+        --dim: #6e7e96;
+        --glass: rgba(8, 12, 26, 0.74);
+        --line: rgba(56, 189, 248, 0.18);
+        --line-strong: rgba(56, 189, 248, 0.42);
+        --blue: #38bdf8;
+        --blue-deep: #2563eb;
+        --cyan: #22d3ee;
+        --purple: #a78bfa;
+        --green: #34d399;
+        --amber: #f59e0b;
+        --red: #f87171;
+        --navW: 224px;
+        --sideW: 360px;
+        --topH: 60px;
+        --footH: 70px;
+        --c-accent: #38bdf8;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        display: grid;
+        grid-template-columns: var(--navW) 1fr var(--sideW);
+        grid-template-rows: var(--topH) 1fr var(--footH);
+        grid-template-areas: "top top top" "nav stage side" "foot foot foot";
+    }
+
+    /* ---------- background cosmos ---------- */
+    #bg { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        background:
+            radial-gradient(1200px 800px at 65% 25%, rgba(37, 99, 235, 0.12), transparent 60%),
+            radial-gradient(900px 600px at 25% 80%, rgba(139, 92, 246, 0.09), transparent 60%),
+            radial-gradient(1500px 1000px at 50% 50%, rgba(6, 10, 28, 0.55), transparent 85%),
+            linear-gradient(180deg, #01050a 0%, #02060d 45%, #01050a 100%);
+        background-size: 100% 100%;
+    }
+    #bg::after { content: ''; position: fixed; inset: 0; pointer-events: none;
+        background-image:
+            linear-gradient(rgba(56, 189, 248, 0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(56, 189, 248, 0.035) 1px, transparent 1px);
+        background-size: 40px 40px; opacity: 0.5; z-index: 1; }
+    #bg .neb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: .55; z-index: 1; }
+
+    /* ---------- top bar ---------- */
+    #topbar { grid-area: top; z-index: 60; display: flex; align-items: center; gap: 12px;
+        padding: 0 18px; background: rgba(5, 9, 22, 0.85); backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--line); }
+    .logo { display: flex; align-items: center; gap: 12px; min-width: 190px; }
+    .logo .dot { width: 34px; height: 34px; border-radius: 50%; flex: none;
+        background: radial-gradient(circle at 35% 30%, #9be4ff, #2563eb 55%, #172554);
+        box-shadow: 0 0 24px rgba(56, 189, 248, 0.7); border: 1px solid rgba(255,255,255,0.15); }
+    .logo b { font-size: 1.06rem; letter-spacing .2px; white-space: nowrap; color: #fff; }
+    .logo small { display: block; font-size: .64rem; color: #7fa8d6; font-weight: 400; margin-top: 1px; }
+    .srch { flex: 1; max-width: 720px; margin: 0 auto; position: relative; display: flex; align-items: center;
+        gap: 8px; height: 38px; padding: 0 16px 0 14px; border-radius: 999px;
+        background: rgba(11, 19, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.28); }
+    .srch:focus-within { border-color: rgba(56, 189, 248, 0.7); box-shadow: 0 0 22px rgba(37, 99, 235, .3); }
+    .srch .sicon { color: var(--blue); font-size: 1rem; }
+    .srch input { flex: 1; background: none; border: none; outline: none; color: var(--ink); font-size: .9rem; }
+    .srch input::placeholder { color: var(--dim); }
+    .topbtn { height: 36px; padding: 0 14px; border-radius: 10px; background: rgba(11, 19, 42, 0.65);
+        border: 1px solid rgba(56, 189, 248, 0.22); color: #cfe8ff; cursor: pointer; font-size: .84rem;
+        display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+    .topbtn:hover { border-color: rgba(56, 189, 248, 0.65); color: #fff; background: rgba(37, 99, 235, .12); }
+    #wsbadge { display: inline-flex; align-items: center; gap: 7px; font-size: .78rem; color: var(--green); white-space: nowrap; }
+    #wsbadge .d { width: 9px; height: 9px; border-radius: 50%; background: currentColor; box-shadow: 0 0 10px currentColor; }
+    #wsbadge.off { color: var(--red); }
+    #clock { font-variant-numeric: tabular-nums; color: #a9c2e2; font-size: .86rem; white-space: nowrap; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; flex: none; display: flex; align-items: center;
+        justify-content: center; font-size: .7rem; font-weight: 700; color: #e7f4ff; cursor: default;
+        background: radial-gradient(circle at 35% 30%, rgba(125, 211, 252, .5), rgba(37, 99, 235, .6));
+        border: 1px solid rgba(56, 189, 248, .5); box-shadow: 0 0 18px rgba(37, 99, 235, .45); }
+    #sideToggle { display: none; }
+
+    /* ---------- left nav ---------- */
+    #leftnav { grid-area: nav; z-index: 50; background: rgba(5, 9, 22, 0.82); backdrop-filter: blur(14px);
+        border-right: 1px solid var(--line); padding: 12px 8px; display: flex; flex-direction: column; gap: 3px; overflow-y: auto; }
+    .nav-it { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px;
+        color: #93b7d8; cursor: pointer; font-size: .89rem; border: 1px solid transparent; user-select: none; }
+    .nav-it .ico { font-size: 1.05rem; width: 22px; text-align: center; }
+    .nav-it:hover { background: rgba(56, 189, 248, 0.1); color: #e5edf7; }
+    .nav-it.active { background: linear-gradient(90deg, rgba(37, 99, 235, 0.3), transparent);
+        color: #fff; border-color: rgba(56, 189, 248, 0.35); box-shadow: inset 0 0 12px rgba(56, 189, 248, 0.15); }
+    .nav-it.disabled { opacity: .5; cursor: not-allowed; filter: grayscale(.4); }
+    .nav-it.disabled:hover { background: transparent; color: #7a8da4; }
+    .nav-it .cnt { margin-left: auto; font-size: .7rem; color: var(--dim); background: rgba(56, 189, 248, 0.12);
+        border-radius: 8px; padding: 1px 7px; }
+    .nav-sep { margin: 12px 6px 5px; font-size: .66rem; letter-spacing: .16em; color: #4d6079; text-transform: uppercase; }
+    #navconn { margin-top: auto; padding: 10px 12px; font-size: .74rem; color: var(--muted);
+        border-top: 1px dashed rgba(148, 163, 184, 0.12); }
+    #navconn b { color: var(--green); }
+
+    /* ---------- stage ---------- */
+    #stage { grid-area: stage; position: relative; overflow: hidden;
+        background: radial-gradient(1200px 800px at 50% 42%, rgba(9, 15, 34, 0.35), transparent 75%); }
+    #viewport { position: absolute; inset: 0; cursor: grab; }
+    #viewport.drag { cursor: grabbing; }
+    #world { position: absolute; left: 50%; top: 50%; transform-origin: 0 0; }
+    /* preset jumps animate; wheel/drag never set this class */
+    #world.anim { transition: transform .45s cubic-bezier(.22, .9, .3, 1); }
+    .wstar { position: absolute; pointer-events: none; }
+    #edges { position: absolute; left: -1400px; top: -900px; width: 2800px; height: 1800px; overflow: visible; pointer-events: none; }
+    #edges path { fill: none; }
+    .spoke { stroke: rgba(56, 189, 248, 0.28); stroke-width: 1.1; stroke-dasharray: none; }
+    .rel-edge { stroke: rgba(167, 139, 250, 0.4); stroke-width: 1.2; }
+    .rel-edge.dim { stroke: rgba(148, 163, 184, 0.22); }
+    .fedge { stroke: rgba(56, 189, 248, 0.45); stroke-width: 1.3; }
+    .edge-label { fill: #8fa8cc; font-size: 9px; paint-order: stroke; stroke: rgba(4, 7, 15, .85); stroke-width: 3px; }
+
+    /* center core node */
+    .core-node { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%);
+        display: flex; flex-direction: column; align-items: center; cursor: pointer; z-index: 6; }
+    .core-orb { width: 156px; height: 156px; border-radius: 50%; position: relative;
+        display: flex; align-items: center; justify-content: center; font-size: 46px;
+        background: radial-gradient(circle at 35% 30%, #bdf8ff 0%, #3b82f6 35%, #1d4ed8 60%, #0a1a4a 100%);
+        box-shadow: 0 0 60px rgba(59, 130, 246, .65), 0 0 150px rgba(37, 99, 235, .35), inset 0 0 38px rgba(191, 229, 255, .5);
+        border: 1px solid rgba(56, 189, 248, 0.5); }
+    .core-orb::after { content: ''; position: absolute; inset: -20px; border-radius: 50%;
+        border: 1px solid rgba(56, 189, 248, 0.45); animation: pulse 3.6s ease-out infinite; }
+    @keyframes pulse { 0% { transform: scale(.95); opacity: .9; } 75% { transform: scale(1.1); opacity: .05; } 100% { opacity: 0; } }
+    /* orbit rings with orbiting markers */
+    .core-orb .orbit { position: absolute; inset: -34px; border-radius: 50%; pointer-events: none;
+        border: 1px dashed rgba(56, 189, 248, .35); animation: spin 28s linear infinite; }
+    .core-orb .orbit.o2 { inset: -64px; border-color: rgba(167, 139, 250, .25);
+        animation-duration: 44s; animation-direction: reverse; }
+    .core-orb .orbit.i3 { inset: -82px; border-color: rgba(34, 211, 238, .18);
+        animation-duration: 56s; animation-direction: normal; }
+    .core-orb .orbit i { position: absolute; top: -3px; left: 50%; width: 7px; height: 7px; border-radius: 50%;
+        background: #7dd3fc; box-shadow: 0 0 14px #38bdf8; }
+    .core-orb .orbit.o2 i { background: #c4b5fd; box-shadow: 0 0 14px #a78bfa; }
+    .core-orb .orbit.i3 i { background: #22d3ee; box-shadow: 0 0 14px #22d3ee; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .core-name { margin-top: 12px; font-size: 1.1rem; font-weight: 700; color: #fff; text-shadow: 0 2px 16px rgba(37, 99, 235, 1); white-space: nowrap; }
+    .core-sub { font-size: .74rem; color: var(--muted); letter-spacing .02em; }
+
+    /* clusters */
+    .cluster { position: absolute; transform: translate(-50%, -50%); width: 210px;
+        display: flex; flex-direction: column; align-items: center; cursor: pointer; z-index: 5; --c: var(--blue); }
+    .cluster .c-island { position: absolute; top: 30px; left: -62px; right: -62px; height: 96px; border-radius: 50%;
+        background: radial-gradient(ellipse at center, color-mix(in srgb, var(--c) 30%, transparent), transparent 72%);
+        filter: blur(20px); z-index: -1; pointer-events: none; }
+    .c-orb { width: 66px; height: 66px; border-radius: 50%; position: relative; z-index: 2;
+        display: flex; align-items: center; justify-content: center; font-size: 26px;
+        background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .22), rgba(11, 18, 40, .9) 65%);
+        border: 1px solid color-mix(in srgb, var(--c) 70%, transparent);
+        box-shadow: 0 0 28px color-mix(in srgb, var(--c) 50%, transparent), inset 0 0 16px color-mix(in srgb, var(--c) 28%, transparent); }
+    .c-name { margin-top: 9px; font-size: .94rem; font-weight: 650; color: #fff; text-shadow: 0 2px 12px rgba(3, 8, 20, .95); }
+    .c-sub { font-size: .7rem; color: var(--muted); text-align: center; }
+    .c-chips { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 8px; max-width: 218px; }
+    .mchip { font-size: .64rem; padding: 3px 10px; border-radius: 999px; background: rgba(11, 18, 40, .82);
+        border: 1px solid rgba(148, 163, 184, 0.28); color: #c6d6ef; cursor: pointer; white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis; max-width: 210px; }
+    .mchip:hover { border-color: color-mix(in srgb, var(--c) 75%, transparent); color: #fff; }
+    .mchip .k { color: var(--c); font-weight: 700; }
+    .cluster:hover .c-orb { transform: scale(1.12); transition: .22s; }
+    /* cluster item list */
+    .c-list { display: flex; flex-direction: column; gap: 2px; margin-top: 9px; width: 100%; max-width: 232px; }
+    .c-row { display: flex; gap: 8px; align-items: center; padding: 4px 9px; border-radius: 9px;
+        font-size: .72rem; color: #c6d6ef; cursor: default; min-width: 0; }
+    .c-row[onclick] { cursor: pointer; }
+    .c-row:hover { background: rgba(56, 189, 248, .11); }
+    .c-row .ci { width: 16px; text-align: center; flex: none; }
+    .c-row .cn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .c-row .cv { color: var(--muted); font-size: .66rem; font-variant-numeric: tabular-nums; flex: none; }
+    /* floating status bubbles (reference: «Browser Agent — Reading article…») */
+    .bubble { position: absolute; transform: translate(-50%, -50%); display: flex; gap: 9px; align-items: center;
+        padding: 9px 13px; border-radius: 14px; max-width: 280px; z-index: 3;
+        background: rgba(9, 15, 32, .88); border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
+        box-shadow: 0 0 26px rgba(37, 99, 235, .28), inset 0 0 14px rgba(255,255,255,0.05); backdrop-filter: blur(6px); }
+    .bubble .bi { font-size: 1.05rem; flex: none; }
+    .bubble .bt { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+    .bubble .bt b { font-size: .72rem; color: #eef5ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bubble .bt small { font-size: .64rem; color: var(--c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* mini object nodes */
+    .mininode { position: absolute; transform: translate(-50%, -50%); width: 132px;
+        display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; z-index: 4; --c: var(--blue); }
+    .mn-orb { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-size: 16px; background: rgba(12, 19, 40, .94); border: 1px solid color-mix(in srgb, var(--c) 65%, transparent);
+        box-shadow: 0 0 16px color-mix(in srgb, var(--c) 35%, transparent); }
+    .mininode:hover .mn-orb { border-color: color-mix(in srgb, var(--c) 90%, transparent); box-shadow: 0 0 20px color-mix(in srgb, var(--c) 65%, transparent); transform: scale(1.05); }
+    .mn-name { font-size: .64rem; color: #c6d6ef; text-align: center; line-height: 1.2; max-width: 128px;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+
+    /* graph / focus nodes */
+    .gnode { position: absolute; transform: translate(-50%, -50%); width: 126px;
+        display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; z-index: 4; --c: var(--blue); }
+    .gn-orb { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-size: 20px; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.16), rgba(11,18,40,.92) 68%);
+        border: 1px solid color-mix(in srgb, var(--c) 65%, transparent);
+        box-shadow: 0 0 20px color-mix(in srgb, var(--c) 45%, transparent); }
+    .gnode:hover .gn-orb { transform: scale(1.12); box-shadow: 0 0 24px color-mix(in srgb, var(--c) 60%, transparent); }
+    .gn-name { font-size: .66rem; color: #d7e4f4; text-align: center; max-width: 124px; line-height: 1.2;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+    .gn-cnt { font-size: .6rem; color: var(--dim); }
+    .gn-rel { font-size: .58rem; color: var(--dim); max-width: 124px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gn-orb.center { width: 70px; height: 70px; font-size: 28px; box-shadow: 0 0 38px color-mix(in srgb, var(--c) 65%, transparent); }
+
+    /* focus card */
+    .focus-card { position: absolute; transform: translate(-50%, -50%); width: 300px; border-radius: 20px;
+        background: rgba(9, 15, 32, 0.92); border: 1px solid rgba(56, 189, 248, 0.5); padding: 18px;
+        backdrop-filter: blur(10px); box-shadow: 0 0 50px rgba(59, 130, 246, 0.45), inset 0 0 20px rgba(255,255,255,0.04); z-index: 7; }
+    .focus-card h3 { font-size: 1rem; color: #f4f9ff; margin-bottom: 4px; word-break: break-word; letter-spacing: .01em; font-weight: 700; }
+    .focus-card .fsub { font-size: .72rem; color: #a5b8d4; margin-bottom: 12px; letter-spacing: .01em; }
+    .focus-card .row { display: flex; justify-content: space-between; gap: 10px; font-size: .76rem;
+        padding: 5px 0; border-top: 1px dashed rgba(148, 163, 184, 0.12); }
+    .focus-card .row b { color: var(--muted); font-weight: 600; }
+
+    /* tree view */
+    .tree-wrap { position: absolute; left: 0; top: 0; width: 1760px;
+        display: flex; flex-direction: column; align-items: center; gap: 32px; z-index: 2; }
+    .troot { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; }
+    .troot .t-orb { width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-size: 24px; background: radial-gradient(circle at 35% 30%, #93c5fd 15%, #1d4ed8 55%, #0a3b8a 100%);
+        box-shadow: 0 0 30px rgba(59, 130, 246, 0.55); }
+    .troot span { font-size: 0.84rem; font-weight: 700; }
+    .trow { display: flex; gap: 52px; justify-content: center; align-items: flex-start; position: relative; }
+    /* horizontal branch bar + root trunk (reference: elbow tree connectors) */
+    .trow::before { content: ''; position: absolute; top: 0; left: 80px; right: 80px; height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.45) 10%, rgba(56, 189, 248, 0.45) 90%, transparent); }
+    .troot { position: relative; }
+    .troot::after { content: ''; position: absolute; bottom: -34px; left: 50%; width: 1px; height: 34px;
+        background: linear-gradient(rgba(56, 189, 248, 0.6), rgba(56, 189, 248, 0.12)); }
+    .tcol { position: relative; padding-top: 34px; cursor: pointer; }
+    .tcol::before { content: ''; position: absolute; top: 0; left: 50%; width: 1px; height: 34px;
+        background: linear-gradient(rgba(56, 189, 248, 0.55), rgba(56, 189, 248, 0.1)); }
+    .thead { display: flex; gap: 9px; align-items: center; padding: 9px 14px; border-radius: 12px;
+        background: rgba(13, 20, 40, 0.88); border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
+        font-size: 0.86rem; font-weight: 700; white-space: nowrap; --c: var(--blue); }
+    .thead small { color: var(--muted); font-weight: 400; margin-left: 4px; font-size: 0.7rem; }
+    .tlist { margin-top: 11px; padding-left: 10px; border-left: 1px solid rgba(56, 189, 248, 0.22);
+        margin-left: 24px; display: flex; flex-direction: column; gap: 3px; }
+    .titem { display: flex; gap: 8px; align-items: center; padding: 6px 10px; font-size: 0.74rem;
+        color: #b9c9e4; border-radius: 10px; cursor: pointer; white-space: nowrap; }
+    .titem:hover { background: rgba(56, 189, 248, 0.12); color: #fff; }
+    .titem .dots { color: #475569; }
+
+    /* mode / zoom controls */
+    #modebar { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px;
+        padding: 6px 12px; border-radius: 999px; background: rgba(10, 16, 34, 0.82); border: 1px solid var(--line-strong);
+        backdrop-filter: blur(12px); z-index: 35; }
+    .modebtn { padding: 7px 16px; border-radius: 999px; background: transparent; border: none;
+        color: #9db6d8; cursor: pointer; font-size: 0.86rem; display: inline-flex; gap: 8px; align-items: center; }
+    .modebtn:hover { color: #e5edf7; }
+    .modebtn.active { background: linear-gradient(135deg, var(--blue-deep), var(--blue)); color: #fff;
+        box-shadow: 0 0 18px rgba(56, 189, 248, 0.5); }
+    #zoomctl { position: absolute; left: 16px; bottom: 14px; z-index: 35; display: flex; align-items: center; gap: 7px;
+        padding: 7px 12px; border-radius: 14px; background: rgba(10, 16, 34, 0.82); border: 1px solid var(--line-strong); backdrop-filter: blur(10px); }
+    .zbtn { width: 28px; height: 28px; border-radius: 9px; background: rgba(37, 99, 235, 0.18);
+        border: 1px solid rgba(56, 189, 248, 0.3); color: #dff1ff; cursor: pointer; font-size: 1rem; line-height: 1; }
+    .zbtn:hover { border-color: rgba(56, 189, 248, 0.7); }
+    #zlabel { min-width: 100px; text-align: center; font-variant-numeric: tabular-nums; color: #cfe8ff; font-size: 0.8rem; }
+    .zpre { padding: 5px 10px; border-radius: 8px; background: transparent; border: 1px solid rgba(148, 163, 184, 0.25);
+        color: #9db6d8; cursor: pointer; font-size: 0.72rem; }
+    .zpre:hover, .zpre.active { border-color: rgba(56, 189, 248, 0.6); color: #fff; background: rgba(37, 99, 235, 0.16); }
+    #stickyhint { position: absolute; right: 18px; bottom: 14px; z-index: 30; font-size: 0.7rem; color: var(--dim); }
+    /* graph relation legend (real relation types, colored edges) */
+    #glegend { position: absolute; left: 16px; bottom: 66px; z-index: 30; display: none; flex-wrap: wrap;
+        gap: 6px; max-width: 580px; }
+    #glegend .lg { display: inline-flex; gap: 7px; align-items: center; padding: 5px 10px; border-radius: 999px;
+        background: var(--glass); border: 1px solid var(--line); font-size: 0.68rem; color: #c6d6ef; }
+    #glegend .lg i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    #glegend .lg b { color: var(--muted); font-weight: 600; }
+
+    /* ---------- sidebar ---------- */
+    #sidebar { grid-area: side; z-index: 35; background: rgba(6, 10, 24, 0.82); backdrop-filter: blur(12px);
+        border-left: 1px solid var(--line); padding: 14px; overflow-y: auto; }
+    .crumbs { display: flex; align-items: center; gap: 5px; color: var(--dim); font-size: .74rem; margin-bottom: 10px; flex-wrap: wrap; }
+    .crumbs b { color: #cfe8ff; font-weight: 600; }
+    .crumbs .sep { color: #475569; }
+    .obj-card { border-radius: 18px; border: 1px solid rgba(56, 189, 248, 0.28); padding: 16px;
+        background: linear-gradient(160deg, rgba(37, 99, 235, 0.14), rgba(139, 92, 246, 0.06)); }
+    .cover { height: 110px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+        font-size: 46px; margin-bottom: 12px; position: relative; overflow: hidden; background:
+        radial-gradient(340px 150px at 30% 0%, rgba(56, 189, 248, 0.28), transparent 72%),
+        linear-gradient(160deg, #091430, #0e1c40); border: 1px solid rgba(56, 189, 248, 0.22); }
+    .cover::before { content: ''; position: absolute; inset: 0;
+        background: repeating-linear-gradient(0deg, rgba(56, 189, 248, 0.06) 0 1px, transparent 1px 22px),
+                    repeating-linear-gradient(90deg, rgba(56, 189, 248, 0.06) 0 1px, transparent 1px 22px); }
+    .cover .cic { position: relative; z-index: 1; filter: drop-shadow(0 0 22px rgba(56, 189, 248, 0.6)); }
+    .obj-card h2 { font-size: 1.02rem; color: #fff; word-break: break-word; }
+    .obj-card .sub { font-size: .74rem; color: #9fb3cf; margin-top: 4px; }
+    .obadge { display: inline-flex; gap: 6px; align-items: center; margin-top: 10px; padding: 4px 11px;
+        border-radius: 999px; font-size: .68rem; background: rgba(52, 211, 153, 0.13); color: var(--green);
+        border: 1px solid rgba(52, 211, 153, 0.35); }
+    .sec-title { margin: 14px 0 8px; font-size: .72rem; letter-spacing: .12em; color: var(--dim);
+        text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+    .sec-title .r { color: #9db6d8; letter-spacing: 0; text-transform: none; }
+    .meta-row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 2px;
+        border-bottom: 1px dashed rgba(148, 163, 184, 0.12); font-size: .8rem; }
+    .meta-row b { color: var(--muted); font-weight: 600; flex: none; }
+    .meta-row span { text-align: right; color: var(--ink); word-break: break-all; min-width: 0; }
+    .rel-item { display: flex; gap: 9px; align-items: center; padding: 7px 10px; border-radius: 10px;
+        cursor: pointer; font-size: .78rem; }
+    .rel-item:hover { background: rgba(56, 189, 248, 0.1); }
+    .rel-item .t { color: var(--dim); margin-left: auto; font-size: .7rem; }
+    .act-btn { width: 100%; margin: 5px 0; padding: 10px 14px; border-radius: 11px;
+        background: rgba(37, 99, 235, 0.16); border: 1px solid rgba(56, 189, 248, 0.3); color: #e4f2ff;
+        cursor: pointer; font-size: .84rem; text-align: left; }
+    .act-btn:hover { border-color: rgba(56, 189, 248, 0.7); background: rgba(37, 99, 235, 0.28); }
+    .perm { display: flex; gap: 9px; font-size: .76rem; color: #b9c9e4; padding: 6px 0; }
+    .perm .ic { color: var(--amber); }
+    .tools { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
+    .tool { display: flex; flex-direction: column; gap: 4px; align-items: center; padding: 10px 3px;
+        border-radius: 13px; background: rgba(11, 19, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.18);
+        color: #a9c2e2; font-size: .66rem; cursor: pointer; }
+    .tool:hover { border-color: rgba(56, 189, 248, 0.55); color: #fff; }
+    .tool .ic { font-size: 1rem; }
+
+    /* ---------- footer ---------- */
+    #bottombar { grid-area: foot; z-index: 60; display: flex; align-items: center; gap: 18px;
+        padding: 0 18px; background: rgba(5, 9, 22, 0.88); backdrop-filter: blur(16px);
+        border-top: 1px solid var(--line); font-size: .78rem; overflow: hidden; }
+    .foot-sec { display: flex; align-items: center; gap: 10px; color: var(--muted); min-width: 0; flex: none; }
+    .foot-sec b { color: var(--ink); font-weight: 600; white-space: nowrap; }
+    /* stacked label/value statuses (reference: «Network / Connected») */
+    .fstat { display: flex; gap: 10px; align-items: center; }
+    .fstat .fi { font-size: 1.1rem; }
+    .fstat .ftx { display: flex; flex-direction: column; line-height: 1.18; gap: 1px; }
+    .fstat small { font-size: .58rem; color: var(--dim); letter-spacing: .06em; text-transform: uppercase; }
+    .fstat b { font-size: .8rem; }
+    .ticker { overflow: hidden; white-space: nowrap; max-width: 320px;
+        mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+    .ticker span { color: #a9c2e2; }
+    .chip { padding: 5px 11px; border-radius: 999px; background: rgba(11, 19, 42, 0.72);
+        border: 1px solid rgba(56, 189, 248, 0.18); color: #cfe8ff; cursor: pointer; font-size: .72rem;
+        display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; flex: none; }
+    .chip:hover { border-color: rgba(56, 189, 248, 0.55); }
+    .qa { color: #9db6d8; margin-right: 4px; }
+    .ok { color: var(--green); } .bad { color: var(--red); } .warn { color: var(--amber); }
+
+    /* ---------- toasts ---------- */
+    #toasts { position: fixed; right: calc(var(--sideW) + 16px); bottom: calc(var(--footH) + 12px);
+        z-index: 90; display: flex; flex-direction: column; gap: 8px; }
+    .toast { padding: 10px 14px; border-radius: 11px; background: rgba(8, 13, 28, .95);
+        border: 1px solid rgba(56, 189, 248, .4); color: #dff1ff; font-size: .8rem;
+        box-shadow: 0 8px 28px rgba(2, 8, 20, .6); max-width: 380px; animation: tin .22s ease; }
+    .toast.err { border-color: rgba(248, 113, 113, .55); }
+    @keyframes tin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    /* ---------- search dropdown ---------- */
+    #sdrop { position: absolute; top: 46px; left: 50%; transform: translateX(-50%); width: min(600px, 82vw);
+        max-height: 400px; overflow-y: auto; border-radius: 14px; background: rgba(8, 13, 28, .97);
+        border: 1px solid rgba(56, 189, 248, .32); z-index: 70; display: none; }
+    .sd-it { padding: 9px 13px; display: flex; gap: 9px; align-items: center; font-size: .82rem;
+        cursor: pointer; border-bottom: 1px solid rgba(148, 163, 184, .07); }
+    .sd-it:hover { background: rgba(56, 189, 248, .1); }
+    .sd-it .t { color: var(--dim); margin-left: auto; font-size: .66rem; }
+
+    /* ---------- modals ---------- */
+    .modal { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center;
+        background: rgba(2, 6, 16, 0.78); backdrop-filter: blur(8px); }
+    .modal.open { display: flex; }
+    .mpanel { width: min(1060px, 96vw); max-height: 90vh; overflow-y: auto; border-radius: 22px;
+        background: #070d1d; border: 1px solid rgba(56, 189, 248, 0.42); padding: 24px;
+        box-shadow: 0 0 90px rgba(37, 99, 235, 0.3); }
+    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .mhead h2 { font-size: 1.06rem; }
+    .mclose { width: 32px; height: 32px; border-radius: 10px; background: rgba(15, 23, 42, 0.72);
+        border: 1px solid rgba(148, 163, 184, 0.3); color: #cfe8ff; cursor: pointer; }
+    .mclose:hover { border-color: var(--blue); color: #fff; }
+
+    /* architecture panel */
+    .layer { display: grid; grid-template-columns: 224px 1fr; gap: 16px; border-radius: 18px;
+        padding: 16px; margin-bottom: 14px; border: 1px solid; }
+    .layer.l1 { border-color: rgba(56, 189, 248, 0.42); background: linear-gradient(90deg, rgba(37, 99, 235, 0.1), transparent); }
+    .layer.l2 { border-color: rgba(52, 211, 153, 0.42); background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), transparent); }
+    .layer.l3 { border-color: rgba(167, 139, 250, 0.48); background: linear-gradient(90deg, rgba(139, 92, 246, 0.1), transparent); }
+    .layer.l4 { border-color: rgba(245, 158, 11, 0.44); background: linear-gradient(90deg, rgba(245, 158, 11, 0.09), transparent); }
+    .lay-head { display: flex; gap: 12px; align-items: flex-start; }
+    .lay-num { flex: none; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
+        justify-content: center; font-size: 0.82rem; font-weight: 700; }
+    .l1 .lay-num { background: #2563eb; } .l2 .lay-num { background: #10b981; }
+    .l3 .lay-num { background: #8b5cf6; } .l4 .lay-num { background: #f59e0b; }
+    .lay-title { font-weight: 700; font-size: 0.96rem; }
+    .lay-sub { font-size: 0.7rem; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+    .lay-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; min-width: 0; }
+    .lcard { border: 1px solid; border-radius: 14px; padding: 12px; font-size: 0.76rem;
+        background: rgba(10, 16, 34, 0.65); min-width: 0; }
+    .l1 .lcard { border-color: rgba(56, 189, 248, 0.3); } .l2 .lcard { border-color: rgba(52, 211, 153, 0.3); }
+    .l3 .lcard { border-color: rgba(167, 139, 250, 0.3); } .l4 .lcard { border-color: rgba(245, 158, 11, 0.3); }
+    .lcard b { display: flex; gap: 7px; align-items: center; color: #eef5ff; margin-bottom: 5px; font-size: 0.84rem; }
+    .lcard span { color: #9db6d8; font-size: 0.74rem; display: block; line-height: 1.45; overflow-wrap: anywhere; }
+    .flowline { display: flex; align-items: center; gap: 10px; padding: 14px 16px; flex-wrap: wrap;
+        border: 1px solid rgba(56, 189, 248, 0.24); border-radius: 16px; background: rgba(10, 16, 34, 0.62); }
+    .fchip { padding: 7px 14px; border-radius: 999px; background: rgba(37, 99, 235, 0.14);
+        border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.78rem; color: #dff1ff; white-space: nowrap; }
+    .fchip small { color: var(--muted); margin-left: 6px; }
+    .farrow { color: #475569; }
+    .focus-card .fheader { border-bottom: 1px solid rgba(56,189,248,.15); padding-bottom: 6px; margin-bottom: 6px; }
+    .focus-card .fsection { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(56,189,248,.12); }
+    .focus-card .fsec-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--blue); margin-bottom: 4px; }
+    .focus-card .ftools { display: flex; gap: 6px; flex-wrap: wrap; }
+    .focus-card .ftools span { padding: 3px 8px; border-radius: 6px; background: rgba(37,99,235,.12); border: 1px solid rgba(56,189,248,.22); font-size: .74rem; cursor: pointer; color: #cfe8ff; }
+    .arch-note { margin-top: 14px; font-size: 0.7rem; color: var(--dim); line-height: 1.6; }
+
+    /* reader modal */
+    #reader .mpanel { width: min(780px, 92vw); }
+    #readerpre { font-size: 0.78rem; white-space: pre-wrap; color: #cfe8ff; max-height: 60vh; overflow: auto;
+        padding: 14px; border-radius: 12px; background: rgba(4, 8, 18, 0.85); border: 1px solid rgba(148, 163, 184, 0.14); }
+
+    /* embedded browser panel (real CDP frames of real tabs) */
+    #browser .mpanel { width: min(1320px, 96vw); height: 88vh; display: flex; flex-direction: column; padding: 16px 18px; overflow: hidden; }
+    .bhint { font-size: .68rem; color: var(--muted); font-weight: 400; margin-left: 8px; }
+    .btabs { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; max-height: 80px; overflow-y: auto; flex: none; }
+    .btab { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px 6px 12px; border-radius: 11px 11px 0 0;
+        background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(56, 189, 248, 0.2); border-bottom: none;
+        color: #9db6d8; font-size: .74rem; cursor: pointer; max-width: 260px; }
+    .btab.active { color: #fff; border-color: rgba(56, 189, 248, 0.6); background: rgba(37, 99, 235, 0.18); }
+    .btab .tt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .btab .x { opacity: 0.55; padding: 0 2px; border-radius: 5px; }
+    .btab .x:hover { opacity: 1; color: var(--red); }
+    .btab.none { border-radius: 10px; border-bottom: 1px solid rgba(56, 189, 248, 0.18); cursor: default; }
+    .bbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex: none; }
+    .binput { flex: 1; height: 36px; padding: 0 13px; border-radius: 10px; outline: none; color: var(--ink);
+        background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.2); font-size: 0.84rem; }
+    .binput:focus { border-color: rgba(56, 189, 248, 0.6); }
+    .bframe-wrap { flex: 1; min-height: 0; border-radius: 14px; overflow: hidden; border: 1px solid rgba(56, 189, 248, 0.28);
+        background: #05070d; display: flex; align-items: center; justify-content: center; }
+    .bframe { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+    .bframe-empty { color: var(--dim); font-size: 0.84rem; padding: 24px; text-align: center; }
+    .bstatus { margin-top: 8px; font-size: 0.74rem; color: var(--muted); min-height: 16px; flex: none; }
+    .bnote { margin-top: 8px; font-size: 0.68rem; color: var(--dim); line-height: 1.5; flex: none; }
+    .bnote .mono { font-family: Consolas, monospace; color: #9db6d8; }
+
+    /* responsive */
+    @media (max-width: 1360px) {
+        body { grid-template-columns: 190px 1fr 0; --navW: 190px; }
+        #sidebar { position: fixed; right: 0; top: var(--topH); bottom: var(--footH); width: var(--sideW);
+            transform: translateX(100%); transition: transform .25s ease; z-index: 60; }
+        #sidebar.open { transform: none; box-shadow: -20px 0 60px rgba(2, 8, 20, .6); }
+        #sideToggle { display: inline-flex; }
+    }
+    @media (max-width: 1040px) {
+        body { grid-template-columns: 64px 1fr 0; --navW: 64px; }
+        .nav-it .lbl, .nav-it .cnt, .nav-sep, #navconn { display: none; }
+        .nav-it { justify-content: center; padding: 10px; }
+    }
+</style>
+</head>
+<body>
+    <div id="bg"></div>
+
+    <!-- top bar -->
+    <header id="topbar">
+        <div class="logo">
+            <div class="dot"></div>
+            <div><b>SpaceOS</b><small>Spatial operating environment</small></div>
+        </div>
+        <div class="srch">
+            <span class="sicon">✦</span>
+            <input id="q" autocomplete="off" placeholder="Ask, search, or give a task…">
+        </div>
+        <div id="sdrop"></div>
+        <span id="clock">--:--:--</span>
+        <div class="avatar" title="Interface action source: server actor space-bridge">SB</div>
+        <span id="wsbadge" class="off"><span class="d"></span><span id="wstxt">Connection…</span></span>
+        <button class="topbtn" id="sideToggle" onclick="toggleSidebar()">▤ Object</button>
+        <button class="topbtn" onclick="openArch()">▦ Architecture</button>
+        <button class="topbtn" onclick="window.open('/index.html', '_blank')" title="Open main Shell">⌂ Shell</button>
+    </header>
+
+    <!-- left nav -->
+    <nav id="leftnav">
+        <div class="nav-sep">Space</div>
+        <div class="nav-it active" data-nav="world" onclick="navGo('world')"><span class="ico">🌐</span><span class="lbl">Workspace / Computer</span></div>
+        <div class="nav-it" data-nav="files" onclick="navGo('files')"><span class="ico">📁</span><span class="lbl">Files</span><span class="cnt" id="cnt-files"></span></div>
+        <div class="nav-it" data-nav="web" onclick="navGo('web')"><span class="ico">🪐</span><span class="lbl">Web</span><span class="cnt" id="cnt-web"></span></div>
+        <div class="nav-it" onclick="openBrowser()" title="Embedded browser: real tabs and CDP frames"><span class="ico">🌐</span><span class="lbl">Workflows (Browser)</span></div>
+        <div class="nav-it" data-nav="missions" onclick="navGo('missions')"><span class="ico">🎯</span><span class="lbl">Mission</span><span class="cnt" id="cnt-missions"></span></div>
+        <div class="nav-it" data-nav="agents" onclick="navGo('agents')"><span class="ico">🤖</span><span class="lbl">Agents</span><span class="cnt" id="cnt-agents"></span></div>
+        <div class="nav-it" data-nav="projects" onclick="navGo('projects')"><span class="ico">🗂</span><span class="lbl">Projects / Knowledge</span><span class="cnt" id="cnt-projects"></span></div>
+        <div class="nav-it" data-nav="events" onclick="navGo('events')"><span class="ico">⚡</span><span class="lbl">Events</span></div>
+        <div class="nav-it" data-nav="system" onclick="navGo('system')"><span class="ico">⚙️</span><span class="lbl">System</span></div>
+        <div id="navconn">● Connection: <b id="conn-line">initializing…</b></div>
+    </nav>
+
+    <!-- stage -->
+    <main id="stage">
+        <div id="viewport"><div id="world"></div></div>
+        <div id="modebar">
+            <button class="modebtn active" data-mode="space" id="m-space" onclick="setMode('space')">🌌 Space View</button>
+            <button class="modebtn" data-mode="tree" id="m-tree" onclick="setMode('tree')">🌲 Tree View</button>
+            <button class="modebtn" data-mode="graph" id="m-graph" onclick="setMode('graph')">🕸 Graph View</button>
+            <button class="modebtn" data-mode="focus" id="m-focus" onclick="setMode('focus')"> 🔦 Focus</button>
+        </div>
+        <div id="zoomctl">
+            <button class="zbtn" onclick="zoomStep(-1)">−</button>
+            <span id="zlabel">100% · World</span>
+            <button class="zbtn" onclick="zoomStep(1)">＋</button>
+            <button class="zpre" id="zp-world" onclick="preset('world')">World</button>
+            <button class="zpre" id="zp-cluster" onclick="preset('cluster')">Cluster</button>
+            <button class="zpre" id="zp-object" onclick="preset('object')">Object</button>
+            <button class="zpre" id="zp-detail" onclick="preset('detail')">Detail</button>
+        </div>
+        <div id="stickyhint">wheel — zoom · drag — pan · double click — zoom in</div>
+        <div id="glegend"></div>
+        <div id="toasts"></div>
+    </main>
+
+    <!-- right sidebar -->
+    <aside id="sidebar"></aside>
+
+    <!-- footer -->
+    <footer id="bottombar">
+        <div class="foot-sec">◍ <b>Activity</b>&nbsp;<span class="ticker" id="ticker">…</span></div>
+        <div class="foot-sec">🕘 <b>Recent objects</b><span id="recent-chip" style="display:inline-flex;gap:6px;overflow:hidden"></span></div>
+        <div class="foot-sec">✦ <b>Quick actions</b>
+            <button class="chip" onclick="runScan()">🔍 Scan</button>
+            <button class="chip" onclick="document.getElementById('q').focus()">✦ Search</button>
+            <button class="chip" onclick="newMission()">＋ Mission</button>
+        </div>
+        <div class="foot-sec fstats" style="margin-left:auto;gap:16px">
+            <span id="f-net"></span>
+            <span id="f-prov"></span>
+            <span id="f-roots"></span>
+            <span id="f-missions"></span>
+        </div>
+    </footer>
+
+    <!-- architecture modal -->
+    <div class="modal" id="arch" onclick="if(event.target===this)closeArch()">
+        <div class="mpanel">
+            <div class="mhead">
+                <h2>▦ SpaceOS — Architecture (ASD-STE100, live data)</h2>
+                <div><button class="topbtn" onclick="closeArch()">Close</button></div>
+            </div>
+            <div id="archbody"></div>
+        </div>
+    </div>
+
+    <!-- file reader modal -->
+    <div class="modal" id="reader" onclick="if(event.target===this)closeReader()">
+        <div class="mpanel">
+            <div class="mhead"><h2 id="readertitle">File reading</h2><button class="mclose" onclick="closeReader()">✕</button></div>
+            <pre id="readerpre"></pre>
+        </div>
+    </div>
+
+    <!-- embedded browser panel: real Chromium tabs shown as live CDP frames -->
+    <div class="modal" id="browser" onclick="if(event.target===this)closeBrowser()">
+        <div class="mpanel">
+            <div class="mhead">
+                <h2>🌐 SpaceOS Browser <span class="bhint">real Chromium tabs · live CDP frames</span></h2>
+                <div style="display:flex;gap:8px;">
+                    <button class="topbtn" onclick="bfNewTab()" title="Create tab with URL from address bar (empty → about:blank)">＋ Tab</button>
+                    <button class="mclose" onclick="closeBrowser()">✕</button>
+                </div>
+            </div>
+            <div class="btabs" id="btabs"></div>
+            <div class="bbar">
+                <input id="burl" class="binput" placeholder="https://…  (address of selected tab)" spellcheck="false" autocomplete="off">
+                <button class="topbtn" onclick="bfGo()">Go</button>
+                <button class="topbtn" onclick="bfReload()">⟳ Reload</button>
+                <button class="topbtn" onclick="bfShow()" title="Switch visible tab in Chromium window">👁 Show in Chromium</button>
+            </div>
+            <div class="bframe-wrap">
+                <img id="bframe" class="bframe" alt="Frame of selected tab page (CDP)" style="display:none">
+                <div class="bframe-empty" id="bfempty">Frame will appear after tab connection…</div>
+            </div>
+            <div class="bstatus" id="bstatus">Select tab…</div>
+            <div class="bnote">View — live page frame via CDP (<span class="mono">Page.captureScreenshot</span>, ~1.5 s), no mimicry and no security policy bypass. Clicks inside the page are not forwarded by this contract — interactivity happens in the Chromium window via «Show in Chromium» or through the built-in <b>iframe surface</b> (`#bframe`) when loaded. URL navigation, refresh, tab create/close run through the existing browser-provider via Core Policy (`POST /providers/browser/actions`). Native embedded browser (`C# WinForms + WebView2`) requires `.NET SDK` + `WebView2 SDK loader` (not installed in this environment); current vertical slice uses the iframe surface with the same Provider contracts.</div>
+        </div>
+    </div>
+
+<script>
+        // ============ helpers ============
+        const $ = id => document.getElementById(id);
+        const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g,
+            c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const fmtTime = ts => { try { return ts ? new Date(ts).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'; } catch (e) { return '—'; } };
+        const fmtWhen = ts => { try { if (!ts) return '—'; const d = new Date(ts); return d.toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' }); } catch (e) { return '—'; } };
+        const hash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
+        const trunc = (s, n) => { s = String(s == null ? '' : s); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+
+        async function fetchJson(url, opts = {}, timeout = 12000) {
+            const ctl = new AbortController();
+            const t = setTimeout(() => ctl.abort(), timeout);
+            try { return await fetch(url, { ...opts, signal: ctl.signal }); }
+            finally { clearTimeout(t); }
+        }
+        async function GET(ep, t = 12000) {
+            const r = await fetchJson('http://127.0.0.1:8765/api' + ep, {}, t);
+            if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + ep);
+            return r.json();
+        }
+        async function POST(ep, body = {}, t = 12000) {
+            const r = await fetchJson('http://127.0.0.1:8765/api' + ep, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            }, t);
+            if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + ep);
+            return r.json();
+        }
+        function toast(msg, err) {
+            const d = document.createElement('div');
+            d.className = 'toast' + (err ? ' err' : '');
+            d.textContent = msg;
+            $('toasts').appendChild(d);
+            setTimeout(() => d.remove(), err ? 6500 : 4500);
+        }
+
+        // ============ state ============
+        const W = {
+            objects: [], relations: [], events: [], missions: [], actions: [],
+            tabs: [], components: null, providers: [], roots: [],
+            mode: 'space', sel: null, selCluster: null, ready: false
+        };
+
+        const TYPES = {
+            Files: t => t === 'File' || t === 'Directory',
+            Web: t => t === 'BrowserTab',
+            Mission: t => t === 'Mission' || t === 'MissionStep',
+            Agents: t => t === 'Agent',
+            Projects: t => t === 'Project' || t === 'Document' || t === 'Result',
+            System: t => t === 'Setting' || t === 'Component'
+        };
+        const typeIcon = t => {
+            if (t === 'Directory') return '📁'; if (t === 'File') return '📄';
+            if (t === 'BrowserTab') return '🪐'; if (t === 'Mission') return '🎯';
+            if (t === 'MissionStep') return '▸'; if (t === 'Agent') return '🤖';
+            if (t === 'Project') return '🗂'; if (t === 'Document') return '📘';
+            if (t === 'Result') return '📊'; return '🧩';
+        };
+        const clusterOf = o => {
+            for (const c in TYPES) if (c !== 'System' && TYPES[c](o.type)) return c;
+            return 'Projects';
+        };
+        const objName = o => (o.properties && (o.properties.name || o.properties.goal))
+            || o.external_id || (o.type + '·' + String(o.id || '').slice(0, 6));
+        const nameFor = o => {
+            if (o && o.type === 'BrowserTab' && o.external_id) {
+                const t = (W.tabs || []).find(x => x.target_id === o.external_id);
+                if (t && t.title) return t.title;
+            }
+            if (o && o.properties && o.properties.title) return o.properties.title;
+            return objName(o);
+        };
+        const objPath = o => (o.properties && (o.properties.path || o.properties.full_path)) || o.external_id || '';
+
+        const CL = { // cluster static config: colors, labels, world positions
+            Files:    { col: '#38bdf8', label: 'Files',   icon: '📁', ang: 178 },
+            Web:      { col: '#a78bfa', label: 'Web',     icon: '🪐', ang: -90 },
+            Mission:  { col: '#f59e0b', label: 'Mission', icon: '🎯', ang: 15 },
+            Agents:   { col: '#34d399', label: 'Agents',  icon: '🤖', ang: -40 },
+            Events:   { col: '#f87171', label: 'Events',  icon: '⚡', ang: 90 },
+            Projects: { col: '#60a5fa', label: 'Projects',  icon: '🗂', ang: -130 },
+            System:   { col: '#94a3b8', label: 'System', icon: '⚙️', ang: 140 }
+        };
+        const CLUSTER_RADIUS = 540;
+        const clPos = name => { // cluster center in world coords (y inverted, screen-like)
+            const a = CL[name].ang * Math.PI / 180;
+            return { x: Math.cos(a) * CLUSTER_RADIUS, y: Math.sin(a) * CLUSTER_RADIUS * 0.72 };
+        };
+
+        const missionStateOf = oid => {
+            const m = (W.missions || []).find(x => x.mission_id === oid);
+            return m ? m.state : (W.objects.find(o => o.id === oid)?.properties?.state || '');
+        };
+        const isTerminal = st => ['completed', 'failed', 'cancelled'].includes(String(st).toLowerCase());
+        const stateColor = st => !st ? 'var(--muted)' :
+            ({ running: 'var(--green)', created: '#7dd3fc', planned: '#fbbf24', verifying: '#c4b5fd',
+               awaiting_approval: 'var(--amber)', completed: 'var(--green)', failed: 'var(--red)', cancelled: '#94a3b8' }[st.toLowerCase()] || 'var(--muted)');
+
+        // ============ data loading (generation-guarded pollers) ============
+        let genWorld = 0, genSide = 0, genTabs = 0;
+
+        async function loadWorld() {
+            const g = ++genWorld;
+            try {
+                const [o, r, e] = await Promise.all([
+                    POST('/objects/query', {}, 15000),
+                    POST('/relations/query', {}, 15000),
+                    GET('/events?limit=50', 12000)
+                ]);
+                if (g !== genWorld) return;
+                W.objects = o.objects || [];
+                W.relations = r.relations || [];
+                W.events = e.events || [];
+                if (!W.ready) firstReady(); else { scheduleRender(); renderNavCounters(); renderFooter(); }
+            } catch (err) {
+                if (g === genWorld) connBad('Core unavailable: ' + trunc(err.message, 60));
+            }
+        }
+        async function loadSide() {
+            const g = ++genSide;
+            try {
+                const [mi, ac, co, pr, ro] = await Promise.all([
+                    GET('/missions', 12000),
+                    GET('/actions/recent?limit=50', 12000),
+                    GET('/components', 12000),
+                    GET('/providers', 12000),
+                    GET('/filesystem/roots', 10000)
+                ]);
+                if (g !== genSide) return;
+                W.missions = mi.missions || [];
+                W.actions = ac.actions || [];
+                W.components = co.components || {};
+                W.providers = pr.providers || [];
+                W.roots = (ro && ro.result && ro.result.result && ro.result.result.roots) || [];
+                renderFooter(); renderNavCounters();
+                // summary card is also live: preserve scroll, update contents
+                const st = $('sidebar').scrollTop;
+                renderSidebar();
+                $('sidebar').scrollTop = st;
+                scheduleRender();
+            } catch (err) {
+                if (g === genSide) connBad('Bridge unavailable: ' + trunc(err.message, 60));
+            }
+        }
+        async function loadTabs() {
+            const g = ++genTabs;
+            try {
+                const d = await GET('/browser/tabs', 10000);
+                if (g !== genTabs) return;
+                W.tabs = (d.result && d.result.result && d.result.result.detail && d.result.result.detail.tabs)
+                    || (d.result && d.result.result && d.result.result.tabs) || (d.result && d.result.tabs) || [];
+                renderFooter();
+                if (W_mode() === 'space' || W_mode() === 'graph') scheduleRender();
+            } catch (err) {
+                if (g === genTabs) { W.tabs = []; renderFooter(); }
+            }
+        }
+
+        function connBad(msg) { $('conn-line').textContent = msg; $('conn-line').className = 'bad'; }
+
+        // ============ live WebSocket (status, as in Shell) ============
+        let ws = null;
+        function connectWs() {
+            try {
+                ws = new WebSocket('ws://127.0.0.1:8765/ws');
+                ws.onopen = () => wsFine();
+                ws.onclose = () => { wsBadSoon(); setTimeout(connectWs, 12000); };
+                ws.onerror = () => { wsBadSoon(); };
+            } catch (e) { wsBadSoon(); }
+        }
+        function wsFine() {
+            $('wstxt').textContent = 'WebSocket: Connected';
+            $('wsbadge').classList.remove('off');
+        }
+        function wsBadSoon() {
+            $('wstxt').textContent = 'Offline · polling';
+            $('wsbadge').classList.add('off');
+        }
+
+        // ============ zoom & pan engine ============
+        const Z = { x: 0, y: 0, s: 1, fit: 1 };
+        const world = () => $('world'), vp = () => $('viewport');
+
+        function fitScale() {
+            const aw = vp().clientWidth * 0.92, ah = vp().clientHeight * 0.92;
+            const needW = 1800, needH = 1200;
+            return Math.min(aw / needW, ah / needH);
+        }
+        function applyZoom() {
+            world().style.transform = 'translate(' + Z.x.toFixed(1) + 'px,' + Z.y.toFixed(1) + 'px) scale(' + Z.s.toFixed(4) + ')';
+            const pct = Math.round(Z.s / Z.fit * 100);
+            const zone = pct >= 640 ? 'Detail' : pct >= 320 ? 'Object' : pct >= 185 ? 'Cluster' : 'World';
+            $('zlabel').textContent = pct + '% · ' + zone;
+            ['zp-world', 'zp-cluster', 'zp-object', 'zp-detail'].forEach((id, i) => {
+                const target = [1, 2.5, 5, 8][i];
+                $(id).classList.toggle('active', Math.abs(Z.s / Z.fit - target) < .2);
+            });
+        }
+        let smoothT = null;
+        function smooth(fn) {
+            const w = world();
+            w.classList.add('anim');
+            clearTimeout(smoothT);
+            smoothT = setTimeout(() => w.classList.remove('anim'), 520);
+            fn();
+        }
+        function refit() {
+            const rel = Z.s / (Z.fit || 1);
+            Z.fit = fitScale();
+            Z.s = Z.fit * rel; // preserve relative zoom; at start rel=1 => 100% «World»
+            applyZoom();
+        }
+        const trimRoot = p => String(p || '').startsWith('\\\\?\\') ? p.slice(4) : p;
+        function zoomAt(cx, cy, factor) {
+            const min = Z.fit * 0.6, max = Z.fit * 12;
+            const ns = Math.min(max, Math.max(min, Z.s * factor));
+            if (ns === Z.s) return;
+            const rect = vp().getBoundingClientRect();
+            const px = (cx - rect.width / 2 - Z.x) / Z.s;
+            const py = (cy - rect.height / 2 - Z.y) / Z.s;
+            Z.s = ns;
+            Z.x = cx - rect.width / 2 - px * ns;
+            Z.y = cy - rect.height / 2 - py * ns;
+            applyZoom();
+        }
+        function zoomStep(dir) { const r = vp().getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, dir > 0 ? 1.25 : 0.8); }
+        function preset(k) {
+            const r = vp().getBoundingClientRect();
+            // focus target: current selection center
+            let tx = 0, ty = 0;
+            if ((k === 'cluster' || k === 'object' || k === 'detail') && W.selCluster) { const p = clPos(W.selCluster); tx = p.x; ty = p.y; }
+            if ((k === 'object' || k === 'detail') && W.selObj) {
+                const pos = nodePos(W.selObj); if (pos) { tx = pos.x; ty = pos.y; }
+            }
+            const scale = k === 'world' ? 1 : k === 'cluster' ? 2.5 : k === 'object' ? 5 : 8;
+            Z.s = Z.fit * scale;
+            const offX = (k === 'detail' && W.selObj) ? r.width * 0.18 : 0; // shift left so card is not hidden under sidebar
+            Z.x = -tx * Z.s - offX;
+            Z.y = -ty * Z.s;
+            smooth(applyZoom);
+        }
+        function resetZoom() { smooth(() => { Z.x = 0; Z.y = 0; refit(); }); }
+        window.addEventListener('resize', () => { refit(); scheduleRender(); });
+
+        // pan
+        let drag = null;
+        (function bindPan() {
+            const v = $('viewport');
+            v.addEventListener('pointerdown', e => {
+                if (e.button !== 0) return;
+                drag = { sx: e.clientX, sy: e.clientY, ox: Z.x, oy: Z.y, moved: false };
+                v.classList.add('drag'); v.setPointerCapture(e.pointerId);
+            });
+            v.addEventListener('pointermove', e => {
+                if (!drag) return;
+                const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+                if (Math.abs(dx) + Math.abs(dy) > 4) drag.moved = true;
+                Z.x = drag.ox + dx; Z.y = drag.oy + dy; applyZoom();
+            });
+            v.addEventListener('pointerup', e => {
+                v.classList.remove('drag');
+                if (drag && !drag.moved && e.target.closest('.cluster, .mininode, .gnode, .titem, .thead, .core-node, .focus-card, .mchip')) { /* click handled elsewhere */ }
+                drag = null;
+            });
+            v.addEventListener('wheel', e => {
+                e.preventDefault();
+                if (e.ctrlKey) { zoomAt(e.clientX - v.getBoundingClientRect().left, e.clientY - v.getBoundingClientRect().top, e.deltaY < 0 ? 1.18 : 1 / 1.18); }
+                else { zoomAt(e.clientX - v.getBoundingClientRect().left, e.clientY - v.getBoundingClientRect().top, e.deltaY < 0 ? 1.1 : 1 / 1.1); }
+            }, { passive: false });
+            v.addEventListener('dblclick', e => {
+                const n = e.target.closest('.mininode, .gnode, .titem, .mchip');
+                if (n) { const id = n.getAttribute('data-oid'); const o = byId(id); if (o || id && id.startsWith('tab:')) { selectObj(id); preset('detail'); return; } }
+                zoomStep(1);
+            });
+        })();
+        window.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT') return;
+            if (e.key === '+' || e.key === '=') zoomStep(1);
+            if (e.key === '-') zoomStep(-1);
+            if (e.key === '0') resetZoom();
+        });
+
+        const byId = id => W.objects.find(o => o.id === id || 'tab:' + (o.external_id || '') === id);
+        const nodePos = id => (window.NodePos || {})[id];
+
+        // ============ render scheduling ============
+        let renderTimer = null;
+        function scheduleRender() {
+            if (renderTimer) return;
+            renderTimer = setTimeout(() => { renderTimer = null; renderWorld(); }, 250);
+        }
+        function firstReady() {
+            W.ready = true;
+            $('conn-line').textContent = 'Core data received';
+            $('conn-line').className = '';
+            refit();
+            renderWorld();
+            renderNavCounters();
+            renderFooter();
+            renderSidebar();
+        }
+        function W_mode() { return W.mode; }
+
+        function setMode(m) {
+            W.mode = m;
+            ['space', 'tree', 'graph', 'focus'].forEach(k => $('m-' + k).classList.toggle('active', k === m));
+            if (m === 'focus' && !W.selObj) { /* pick latest object to focus */ const o = W.objects.filter(x => !isTerminal(missionStateOf(x.id)) && (x.type === 'Mission')).sort((a, b) => cmpTime(b, a))[0] || W.objects[0]; if (o) W.selObj = o.id; }
+            smooth(() => { Z.s = Z.fit; Z.x = 0; Z.y = 0; refit(); }); // each view starts at its base scale
+            renderWorld();
+        }
+        const cmpTime = (a, b) => new Date(a.updated_at || a.created_at || 0) - new Date(b.updated_at || b.created_at || 0);
+
+        const NAV2CL = { world: null, files: 'Files', web: 'Web', missions: 'Mission',
+            agents: 'Agents', projects: 'Projects', events: 'Events', system: 'System' };
+        function navGo(name) {
+            document.querySelectorAll('.nav-it').forEach(n => n.classList.toggle('active', n.dataset.nav === name));
+            W.nav = name;
+            if (name === 'world') { W.selCluster = null; W.selObj = null; setMode('space'); preset('world'); return; }
+            const cl = NAV2CL[name] || 'Events';
+            W.selCluster = cl; W.selObj = null;
+            setMode('space');
+            selectCluster(cl, false);
+            preset('cluster');
+            renderSidebar();
+        }
+        // ============ starfield (built once) ============
+        let STARS_HTML = '';
+        function buildStars() {
+            const mk = n => {
+                let s = [];
+                for (let i = 0; i < n; i++) {
+                    const x = (Math.random() * 2800 - 1400).toFixed(0);
+                    const y = (Math.random() * 1800 - 900).toFixed(0);
+                    s.push(x + 'px ' + y + 'px #fff');
+                }
+                return 'box-shadow:' + s.join(',') + ';';
+            };
+            STARS_HTML = '<div class="wstar" style="left:-1400px;top:-900px;width:1px;height:1px;opacity:.5;' + mk(200) + '"></div>'
+                + '<div class="wstar" style="left:-1400px;top:-900px;width:1px;height:1px;opacity:.28;' + mk(160) + '"></div>';
+        }
+
+        // ============ world rendering ============
+        window.NodePos = {};
+        function memberObjs(cl) {
+            let list = W.objects.filter(o => clusterOf(o) === cl);
+            if (cl === 'System') list = W.objects.filter(o => TYPES.System(o.type));
+            list.sort((a, b) => cmpTime(b, a));
+            return list;
+        }
+        function tabObjs() {
+            return (W.tabs || []).map(t => ({
+                id: 'tab:' + (t.target_id || ''), type: 'BrowserTab',
+                external_id: t.target_id || '', title: t.title || 'Untitled',
+                url: t.url || '', updated_at: null
+            }));
+        }
+        function clusterCounts(cl) {
+            const objs = memberObjs(cl);
+            const byType = {};
+            objs.forEach(o => { byType[o.type] = (byType[o.type] || 0) + 1; });
+            return { objs, byType, total: objs.length + (cl === 'Web' ? (W.tabs || []).length : 0) };
+        }
+        function focusPickDefault() {
+            const m = W.objects.filter(o => o.type === 'Mission' && !isTerminal(missionStateOf(o.id)));
+            if (m.length) return m[0];
+            const any = W.objects[0];
+            return any || null;
+        }
+
+        function renderWorld() {
+            const el = world(), vpEl = vp();
+            window.NodePos = {};
+            if (W.selObj && !byId(W.selObj) && !String(W.selObj).startsWith('tab:')) W.selObj = null;
+            const mode = W.mode;
+            if (mode === 'space') renderSpace(el);
+            else if (mode === 'tree') renderTreeMode(el);
+            else if (mode === 'graph') renderGraphMode(el);
+            else renderFocusMode(el);
+            const gl = $('glegend');
+            if (gl) gl.style.display = (mode === 'graph' && gl.innerHTML) ? 'flex' : 'none';
+        }
+
+        function spokesAndStars(extraEdges) {
+            let defs = '', glow = '', paths = '';
+            for (const name in CL) {
+                const p = clPos(name);
+                const mx = p.x / 2, my = p.y / 2;
+                const dx = p.x - 6, dy = p.y + 10, len = Math.sqrt(dx * dx + dy * dy) || 1;
+                const nx = -dy / len * 40, ny = dx / len * 40;
+                const d = 'M ' + (nx * .35) + ' ' + (ny * .35 + 12) + ' Q ' + (mx + nx) + ' ' + (my + ny) + ' ' + p.x + ' ' + p.y;
+                const gid = 'g-' + name, col = CL[name].col;
+                // light trail: core blue fading into the cluster colour
+                defs += '<linearGradient id="' + gid + '" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="' + p.x + '" y2="' + p.y + '">'
+                    + '<stop offset="0" stop-color="#7dd3fc" stop-opacity=".5"/>'
+                    + '<stop offset=".55" stop-color="' + col + '" stop-opacity=".3"/>'
+                    + '<stop offset="1" stop-color="' + col + '" stop-opacity=".05"/></linearGradient>';
+                glow += '<path d="' + d + '" stroke="url(#' + gid + ')" stroke-width="4.5" stroke-opacity=".16" fill="none" stroke-linecap="round"/>';
+                paths += '<path d="' + d + '" stroke="url(#' + gid + ')" stroke-width="1.4" fill="none" stroke-linecap="round"/>';
+            }
+            return '<svg id="edges" viewBox="-1400 -900 2800 1800"><defs>' + defs + '</defs>' + glow + paths + (extraEdges || '') + '</svg>';
+        }
+        function coreNodeHtml() {
+            return '<div class="core-node" onclick="navGo(\'world\')">'
+                + '<div class="core-orb">◉<span class="orbit o1"><i></i></span><span class="orbit o2"><i></i></span></div>'
+                + '<div class="core-name">Core SpaceOS</div>'
+                + '<div class="core-sub">' + esc(W.objects.length) + ' objects · ' + esc(W.relations.length) + ' relations · ' + esc(W.events.length) + ' events</div>'
+                + '</div>';
+        }
+        function miniNodesHtml(cl, cx, cy, list) {
+            let h = '';
+            const ccol = CL[cl].col;
+            (list || []).forEach((o, i) => {
+                if (window.NodePos[o.id]) return;
+                const base = hash(o.id) % 360;
+                const ring = i < 5 ? 150 : 236;
+                const ang = (base + i * 47) * Math.PI / 180;
+                const x = cx + Math.cos(ang) * ring * 1.24;
+                const y = cy + Math.sin(ang) * ring * 0.82;
+                window.NodePos[o.id] = { x: x, y: y };
+                const nm = o.title ? esc(trunc(o.title, 30)) : esc(trunc(objName(o), 30));
+                h += '<div class="mininode" style="left:' + x.toFixed(0) + 'px;top:' + y.toFixed(0) + 'px;--c:' + ccol
+                    + '" data-oid="' + esc(o.id) + '" onclick="selectObj(\'' + esc(o.id) + '\', true)">'
+                    + '<div class="mn-orb">' + typeIcon(o.type) + '</div>'
+                    + '<div class="mn-name">' + nm + '</div></div>';
+            });
+            return h;
+        }
+        function cRow(icon, name, val, onclick, color) {
+            return '<div class="c-row"' + (onclick ? ' onclick="event.stopPropagation();' + onclick + '"' : '') + '>'
+                + '<span class="ci"' + (color ? ' style="color:' + color + '"' : '') + '>' + icon + '</span>'
+                + '<span class="cn">' + esc(trunc(name, 22)) + '</span>'
+                + '<span class="cv">' + esc(val == null ? '' : val) + '</span></div>';
+        }
+        function clusterHtml(name) {
+            const cfg = CL[name];
+            const p = clPos(name);
+            window.NodePos[name] = { x: p.x, y: p.y };
+            const cc = clusterCounts(name);
+            const accent = W.selCluster === name ? 'outline: 1px solid ' + cfg.col + '; outline-offset: 5px;' : '';
+            let rows = '';
+            let subs = '';
+            if (name === 'Events') {
+                subs = 'last ' + Math.min(W.events.length, 50) + ' from Core';
+                W.events.slice(0, 3).forEach(e => {
+                    const et = e.event_type || '?';
+                    const col = et === 'ActionCompleted' ? 'var(--green)' : (et === 'ActionFailed' || et === 'ActionDenied') ? 'var(--red)' : '#7dd3fc';
+                    rows += cRow('●', et.replace(/^Action/, ''), fmtTime(e.timestamp), null, col);
+                });
+            } else if (name === 'Files') {
+                const t = cc.byType;
+                subs = (t.File || 0) + ' files · ' + (t.Directory || 0) + ' directories';
+                rows += cRow('📄', 'Files', t.File || 0);
+                rows += cRow('📁', 'Directories', t.Directory || 0);
+                memberObjs('Files').slice(0, 2).forEach(o => {
+                    rows += cRow(typeIcon(o.type), nameFor(o), fmtTime(o.updated_at), 'selectObj(\'' + esc(o.id) + '\', true)');
+                });
+            } else if (name === 'Web') {
+                const n = (W.tabs || []).length + (cc.byType.BrowserTab || 0);
+                subs = 'tabs: ' + n;
+                rows += cRow('🪐', 'CDP tabs', (W.tabs || []).length, 'openBrowser()');
+                tabObjs().slice(0, 3).forEach(t => {
+                    const host = (t.url || '').replace(/^https?:\/\//, '').split('/')[0] || '—';
+                    rows += cRow('🌐', t.title, host, 'openBrowser(\'' + esc(t.external_id) + '\')');
+                });
+                if (!(W.tabs || []).length && !cc.byType.BrowserTab) rows += cRow('·', 'No CDP tabs', '');
+            } else if (name === 'Mission') {
+                const live = W.objects.filter(o => o.type === 'Mission' && !isTerminal(missionStateOf(o.id)));
+                const stc = {};
+                (W.missions || []).forEach(m => { stc[m.state] = (stc[m.state] || 0) + 1; });
+                subs = live.length + ' active of ' + (W.missions || []).length;
+                Object.keys(stc).slice(0, 4).forEach(s => {
+                    rows += cRow('●', s, stc[s], null, stateColor(s));
+                });
+            } else if (name === 'Agents') {
+                const byActor = {};
+                (W.actions || []).forEach(r => { if (r.actor) byActor[r.actor] = (byActor[r.actor] || 0) + 1; });
+                const actors = Object.keys(byActor);
+                subs = actors.length + ' actors in history';
+                actors.slice(0, 4).forEach(a => { rows += cRow('●', a, byActor[a], null, 'var(--green)'); });
+            } else if (name === 'Projects') {
+                subs = Object.keys(cc.byType).sort().map(k => cc.byType[k] + ' ' + k).join(' · ') || 'knowledge domains';
+                Object.keys(cc.byType).sort().slice(0, 3).forEach(k => { rows += cRow(typeIcon(k), k, cc.byType[k]); });
+                memberObjs('Projects').slice(0, 1).forEach(o => {
+                    rows += cRow(typeIcon(o.type), nameFor(o), fmtTime(o.updated_at), 'selectObj(\'' + esc(o.id) + '\', true)');
+                });
+            } else if (name === 'System') {
+                const comps = W.components || {};
+                const names = Object.keys(comps);
+                const ok = names.filter(k => comps[k] && comps[k].connected).length;
+                subs = ok + '/' + names.length + ' components online';
+                names.slice(0, 4).forEach(k => {
+                    const on = comps[k] && comps[k].connected;
+                    rows += cRow(on ? '✔' : '✘', k, on ? 'online' : 'offline', null, on ? 'var(--green)' : 'var(--red)');
+                });
+            }
+            return '<div class="cluster" style="left:' + p.x.toFixed(0) + 'px;top:' + p.y.toFixed(0) + 'px;--c:' + cfg.col + ';' + accent
+                + '" onclick="selectCluster(\'' + name + '\', false)">'
+                + '<div class="c-island"></div><div class="c-orb">' + cfg.icon + '</div>'
+                + '<div class="c-name">' + cfg.label + '</div>'
+                + '<div class="c-sub">' + esc(trunc(subs, 46)) + '</div>'
+                + '<div class="c-list">' + rows + '</div>'
+                + '</div>';
+        }
+
+        function bubblesHtml() {
+            const out = [];
+            const lastAct = (W.actions || [])[0];
+            if (lastAct) {
+                const st = String(lastAct.status || '');
+                out.push({ x: -900, y: 396, icon: '⚙️',
+                    t: (lastAct.actor || '?') + ' — ' + (lastAct.operation || '?'),
+                    s: st || 'in history', col: st === 'Completed' ? 'var(--green)' : (st === 'Failed' || st === 'Denied') ? 'var(--red)' : 'var(--amber)' });
+            }
+            const lm = (W.missions || []).find(m => String(m.state).toLowerCase() === 'running')
+                || (W.missions || []).find(m => !isTerminal(m.state));
+            if (lm) out.push({ x: 900, y: -430, icon: '🎯', t: trunc(lm.goal || lm.mission_id, 34),
+                s: 'Mission · ' + (lm.state || '?'), col: stateColor(lm.state) });
+            const wsOn = ws && ws.readyState === 1;
+            out.push({ x: 930, y: 452, icon: wsOn ? '🛰' : '📡', t: 'Core', s: wsOn ? 'WebSocket: live' : 'polling: live', col: wsOn ? 'var(--green)' : 'var(--amber)' });
+            return out.map(b => '<div class="bubble" style="left:' + b.x + 'px;top:' + b.y + 'px;--c:' + b.col + '">'
+                + '<span class="bi">' + b.icon + '</span><span class="bt"><b>' + esc(trunc(b.t, 34)) + '</b><small>' + esc(b.s) + '</small></span></div>').join('');
+        }
+        function renderSpace(el) {
+            let minis = '';
+            minis += miniNodesHtml('Files', clPos('Files').x, clPos('Files').y, memberObjs('Files').slice(0, 6));
+            minis += miniNodesHtml('Mission', clPos('Mission').x, clPos('Mission').y,
+                W.objects.filter(o => o.type === 'Mission' && !isTerminal(missionStateOf(o.id))).slice(0, 5));
+            minis += miniNodesHtml('Projects', clPos('Projects').x, clPos('Projects').y, memberObjs('Projects').slice(0, 4));
+            const tabsAll = tabObjs();
+            minis += miniNodesHtml('Web', clPos('Web').x, clPos('Web').y, (tabsAll.length ? tabsAll : memberObjs('Web')).slice(0, 4));
+            el.innerHTML = STARS_HTML + spokesAndStars('') + coreNodeHtml()
+                + Object.keys(CL).map(clusterHtml).join('') + minis + bubblesHtml();
+        }
+
+        // ---- tree mode ----
+        function tline(label, oid, icon, extra) {
+            return '<div class="titem" ' + (oid ? 'onclick="selectObj(\'' + esc(oid) + '\', true)"' : '') + '>'
+                + (icon || '') + '<span>' + esc(trunc(label, 44)) + '</span>' + (extra ? '<span class="dots" style="margin-left:auto">' + esc(extra) + '</span>' : '') + '</div>';
+        }
+        function renderTreeMode(el) {
+            const cols = [];
+            for (const name in CL) {
+                const cfg = CL[name]; let items = ''; let n = 0; let more = '';
+                if (name === 'Files') {
+                    const files = memberObjs('Files').filter(o => o.type === 'File');
+                    const dirs = memberObjs('Files').filter(o => o.type === 'Directory');
+                    items = tline(dirs.length + ' directories', dirs[0] && dirs[0].id, '<span>📁</span>', 'root')
+                        + files.slice(0, 12).map(o => tline(objName(o), o.id, '<span>' + typeIcon('File') + '</span>', fmtTime(o.updated_at))).join('');
+                    if (files.length > 12) more = 'first 12 of ' + files.length + ' (by update)';
+                    n = files.length + dirs.length;
+                } else if (name === 'Web') {
+                    const t = tabObjs();
+                    items = t.slice(0, 8).map(tb => tline(tb.title, tb.id, '<span>🌐</span>')).join('');
+                    if (!t.length) items = '<div class="titem dots">No CDP tabs</div>';
+                    n = t.length;
+                } else if (name === 'Mission') {
+                    const ms = memberObjs('Mission').filter(o => o.type === 'Mission');
+                    const live = ms.filter(o => !isTerminal(missionStateOf(o.id)));
+                    items = live.slice(0, 10).map(o => tline(trunc((o.properties && o.properties.goal) || objName(o), 30), o.id,
+                        '<span>' + typeIcon('Mission') + '</span>', missionStateOf(o.id) || '')).join('');
+                    if (!items) items = '<div class="titem dots">No active Mission</div>';
+                    n = live.length;
+                } else if (name === 'Agents') {
+                    const acts = [...new Set((W.actions || []).map(r => r.actor))].filter(Boolean);
+                    items = acts.slice(0, 8).map(a => tline(a, null, '<span>●</span>', 'actor')).join('');
+                    n = acts.length;
+                } else if (name === 'Events') {
+                    items = W.events.slice(0, 8).map(e => {
+                        const et = e.event_type || '?';
+                        const col = et === 'ActionCompleted' ? 'var(--green)' : (et === 'ActionFailed' || et === 'ActionDenied') ? 'var(--red)' : '#7dd3fc';
+                        return tline(et + ' · ' + fmtTime(e.timestamp), null, '<span style="color:' + col + '">●</span>', e.actor);
+                    }).join('');
+                    n = W.events.length;
+                } else if (name === 'Projects') {
+                    const p = memberObjs('Projects');
+                    items = p.slice(0, 10).map(o => tline(objName(o), o.id, '<span>' + typeIcon(o.type) + '</span>', o.type)).join('');
+                    if (!items) items = '<div class="titem dots">Empty</div>';
+                    n = p.length;
+                } else if (name === 'System') {
+                    const comps = W.components || {};
+                    items = Object.keys(comps).map(k => tline(k, null, '<span style="color:' + (comps[k].connected ? 'var(--green)' : 'var(--red)') + '">●</span>', comps[k].connected ? 'online' : 'offline')).join('');
+                    if (W.roots && W.roots.length) items += tline('roots: ' + W.roots.map(r => trimRoot(r)).join(' ; '), null, '<span>🔒</span>');
+                } else continue;
+                const sel = W.selCluster === name ? 'outline:1px solid ' + cfg.col + ';outline-offset:3px;' : '';
+                cols.push('<div class="tcol" onclick="selectCluster(\'' + name + '\', false)">'
+                    + '<div class="thead" style="--c:' + cfg.col + '"><span>' + cfg.icon + '</span> ' + cfg.label + '<small>' + (n || '') + '</small></div>'
+                    + '<div class="tlist">' + items + '</div>' + (more ? '<div class="c-sub" style="margin-top:6px">' + esc(more) + '</div>' : '')
+                    + '</div>');
+            }
+            el.innerHTML = '<div class="tree-wrap">'
+                + '<div class="troot" onclick="navGo(\'world\')"><div class="t-orb">◉</div><span>Core SpaceOS · ' + esc(W.objects.length) + ' objects</span></div>'
+                + '<div class="trow">' + cols.join('') + '</div>'
+                + '</div>';
+        }
+
+        // ---- graph mode (real relation edges) ----
+        function updateLegend(colors, counts) {
+            const gl = $('glegend');
+            if (!gl) return;
+            gl.innerHTML = Object.keys(colors).slice(0, 8).map(t =>
+                '<span class="lg"><i style="background:' + colors[t] + '"></i>' + esc(t) + ' <b>' + (counts[t] || 0) + '</b></span>').join('');
+        }
+        function renderGraphMode(el) {
+            const deg = {};
+            W.relations.forEach(r => {
+                deg[r.source_object_id] = (deg[r.source_object_id] || 0) + 1;
+                deg[r.target_object_id] = (deg[r.target_object_id] || 0) + 1;
+            });
+            const palette = ['#38bdf8', '#a78bfa', '#34d399', '#f59e0b', '#f87171', '#60a5fa', '#f472b6'];
+            const relColors = {}, relCounts = {};
+            W.relations.forEach(r => { relCounts[r.relation_type] = (relCounts[r.relation_type] || 0) + 1; });
+            const relColor = t => {
+                if (!(t in relColors)) relColors[t] = palette[Object.keys(relColors).length % palette.length];
+                return relColors[t];
+            };
+            const relsTop = W.relations.slice(0, 70);
+            const seen = new Set();
+            const shown = [];
+            const pushObj = id => {
+                if (seen.has(id) || shown.length >= 30) return;
+                const o = byId(id); if (!o) return;
+                seen.add(id); shown.push(o);
+            };
+            relsTop.forEach(r => { pushObj(r.source_object_id); pushObj(r.target_object_id); });
+            if (shown.length < 12) {
+                for (const cl of ['Mission', 'Files', 'Projects']) {
+                    memberObjs(cl).slice(0, 6).forEach(o => pushObj(o.id));
+                }
+            }
+            const ids = new Set(shown.map(o => o.id));
+            shown.forEach(o => {
+                const cl = clusterOf(o);
+                const cfg = CL[cl];
+                const p = clPos(cl);
+                const base = hash(o.id) % 360;
+                const ring = 150 + (deg[o.id] || 0) * 12;
+                const ang = (base + 90) * Math.PI / 180;
+                const x = p.x + Math.cos(ang) * ring * 0.8;
+                const y = p.y + Math.sin(ang) * ring * 0.62;
+                window.NodePos[o.id] = { x: x, y: y };
+            });
+            let edgesHtml = ''; let li = 0;
+            relsTop.forEach(r => {
+                if (!ids.has(r.source_object_id) || !ids.has(r.target_object_id) || li > 70) return;
+                const a = window.NodePos[r.source_object_id], b = window.NodePos[r.target_object_id];
+                if (!a || !b) return;
+                const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+                const dx = b.x - a.x, dy = b.y - a.y, ln = Math.sqrt(dx * dx + dy * dy) || 1;
+                const nx = -dy / ln * 30, ny = dx / ln * 30;
+                const col = relColor(r.relation_type);
+                edgesHtml += '<path class="rel-edge' + (li > 18 ? ' dim' : '') + '" style="stroke:' + col + ';stroke-opacity:' + (li > 18 ? .22 : .6) + '" d="M ' + a.x.toFixed(0) + ' ' + a.y.toFixed(0) + ' Q ' + (mx + nx).toFixed(0) + ' ' + (my + ny).toFixed(0) + ' ' + b.x.toFixed(0) + ' ' + b.y.toFixed(0) + '"><title>' +
+                    esc(r.relation_type) + '</title></path>';
+                li++;
+            });
+            const nodes = shown.map(o => {
+                const p = window.NodePos[o.id];
+                const cfg = CL[clusterOf(o)];
+                const d = deg[o.id] || 0;
+                const halo = d >= 5 ? 'box-shadow:0 0 30px color-mix(in srgb, var(--c) 70%, transparent);' : '';
+                return '<div class="gnode" style="left:' + p.x.toFixed(0) + 'px;top:' + p.y.toFixed(0) + 'px;--c:' + cfg.col + '" data-oid="' + esc(o.id) + '" onclick="selectObj(\'' + esc(o.id) + '\', true)">'
+                    + '<div class="gn-orb" style="' + halo + '">' + typeIcon(o.type) + '</div>'
+                    + '<div class="gn-name">' + esc(trunc(objName(o), 26)) + '</div>'
+                    + '<div class="gn-cnt">' + esc(d + ' conn.') + '</div></div>';
+            }).join('');
+            el.innerHTML = STARS_HTML + spokesAndStars(edgesHtml) + coreNodeHtml()
+                + Object.keys(CL).filter(k => k !== 'Events' && k !== 'System').map(clusterHtml).join('') + nodes;
+            updateLegend(relColors, relCounts);
+        }
+
+        // ---- focus mode ----
+        function relatedOf(id) {
+            const out = [];
+            const seen = new Set([id]);
+            W.relations.forEach(r => {
+                let other = null, rel = r.relation_type;
+                if (r.source_object_id === id) other = r.target_object_id;
+                else if (r.target_object_id === id) { other = r.source_object_id; rel += ' ←'; }
+                if (other && !seen.has(other)) { seen.add(other); out.push({ id: other, rel: rel }); }
+            });
+            return out;
+        }
+        function renderFocusMode(el) {
+            const oid = W.selObj || (focusPickDefault() || {}).id;
+            const o = oid && (byId(oid) || tabObjs().find(t => t.id === oid));
+            if (!o) { el.innerHTML = STARS_HTML + '<pre style="color:#64748b;position:absolute;left:0;top:0;transform:translate(-50%,-50%)">No Core data</pre>'; return; }
+            W.selObj = o.id;
+            window.NodePos[o.id] = { x: 0, y: 0 };
+            const rel = relatedOf(o.id);
+            let sHtml = '', edHtml = '';
+            const sats = rel.slice(0, 12);
+            sats.forEach((r, i) => {
+                const so = byId(r.id);
+                if (!so) return;
+                if (window.NodePos[so.id]) return;
+                const base = hash(so.id) % 360;
+                const ring = i < 6 ? 310 : 480;
+                const ang = (base + i * 33) * Math.PI / 180;
+                const x = Math.cos(ang) * ring, y = Math.sin(ang) * ring * 0.74;
+                window.NodePos[so.id] = { x: x, y: y };
+                sHtml += '<div class="gnode" style="left:' + x.toFixed(0) + 'px;top:' + y.toFixed(0) + 'px;--c:' + CL[clusterOf(so)].col + '" onclick="selectObj(\'' + esc(so.id) + '\', true)">'
+                    + '<div class="gn-orb">' + typeIcon(so.type) + '</div><div class="gn-name">' + esc(trunc(objName(so), 24)) + '</div>'
+                    + '<div class="gn-rel">' + esc(trunc(r.rel, 18)) + '</div></div>';
+                edHtml += '<path class="fedge" d="M 0 0 Q ' + (x / 2).toFixed(0) + ' ' + (y / 2 + 18).toFixed(0) + ' ' + x.toFixed(0) + ' ' + y.toFixed(0) + '"><title>' + esc(r.rel) + '</title></path>';
+            });
+            const st = missionStateOf(o.id);
+            const card = '<div class="focus-card">'
+                + '<div class="fheader"><h3>' + (String(o.id).startsWith('tab:') ? '🌐 ' + esc(trunc(o.title || 'Tab', 34)) : typeIcon(o.type) + ' ' + esc(trunc(objName(o), 40))) + '</h3></div>'
+                + '<div class="fsub">' + esc(o.type) + (st ? ' · ' + esc(st) : '') + ' · ' + esc((CL[clusterOf(o)] || {}).label || '') + '</div>'
+                + '<div class="fsection"><div class="fsec-title">Metadata</div>'
+                + '<div class="row"><b>updated</b><span>' + esc(fmtWhen(o.updated_at || o.created_at)) + '</span></div>'
+                + '<div class="row"><b>ID</b><span>' + esc(String(o.id).slice(0, 13)) + '…</span></div>'
+                + '<div class="row"><b>connections</b><span>' + rel.length + '</span></div></div>'
+                + '<div class="fsection"><div class="fsec-title">Related objects</div>'
+                + (rel.length ? sats.slice(0, 6).map(r => '<span class="chip" onclick="selectObj(\'' + esc(r.id) + '\',true)">' + typeIcon(byId(r.id) ? byId(r.id).type : '') + ' ' + esc(trunc(objName(byId(r.id) || {id:r.id,type:''}), 16)) + '</span>').join('') : '<span class="chip">No connections for object</span>')
+                + '</div>'
+                + '<div class="fsection"><div class="fsec-title">Permissions</div><div class="perm"><span class="ic">🔒</span><span>All data — from Core via API/WS; UI does not change state without your explicit actions</span></div></div>'
+                + '<div class="fsection"><div class="fsec-title">Quick actions</div><div class="ftools">' + (W.selCluster ? '<span onclick="navGo(\'world\')">World</span> ' : '') + '<span onclick="relatedGraph()">Graph</span> <span onclick="quickSearch(\'\')">Search</span></div></div>'
+                + '</div>';
+            el.innerHTML = STARS_HTML + '<svg id="edges" viewBox="-1400 -900 2800 1800">' + edHtml + '</svg>' + card + sHtml;
+        }
+
+        // ============ selection ============
+        function selectObj(id, openFocus) {
+            const o = byId(id) || tabObjs().find(t => t.id === id);
+            if (!o) return;
+            W.selObj = id;
+            W.selCluster = clusterOf(o);
+            if (openFocus) {
+                W.mode = 'focus';
+                ['space', 'tree', 'graph', 'focus'].forEach(k => $('m-' + k).classList.toggle('active', k === 'focus'));
+                refit(); renderWorld(); renderSidebar(); preset('detail');
+            } else {
+                renderWorld(); renderSidebar();
+            }
+        }
+        function selectCluster(name, zoom) {
+            W.selCluster = name; W.selObj = null;
+            if (W.mode === 'focus') {
+                W.mode = 'space';
+                $('m-focus').classList.remove('active'); $('m-space').classList.add('active');
+            }
+            if (zoom !== false) preset('cluster'); else { renderWorld(); }
+            renderSidebar();
+        }
+
+        // ============ sidebar ============
+        function metaRow(k, v) { return '<div class="meta-row"><b>' + esc(k) + '</b><span>' + esc(v == null || v === '' ? '—' : v) + '</span></div>'; }
+        function renderSidebar() {
+            const sb = $('sidebar');
+            if (W.selObj) {
+                const o = byId(W.selObj) || tabObjs().find(t => t.id === W.selObj);
+                if (!o) { W.selObj = null; return renderSidebar(); }
+                const isTab = String(o.id).startsWith('tab:');
+                const cl = clusterOf(o);
+                const rel = relatedOf(o.id);
+                const st = missionStateOf(o.id);
+                let actions = '';
+                let perms = [];
+                if (o.type === 'File') {
+                    const p = (objPath(o) || '').replace(/\\/g, '\\\\').replace(/'/g, '');
+                    actions = '<button class="act-btn" onclick="readFile(\'' + esc(p) + '\')">📖 Read file</button>';
+                    perms = ['Read — allowed (space-bridge → Core → filesystem)',
+                        'Write — only action.write with conflict stamps',
+                        'Roots boundary: ' + esc(trimRoot(W.roots[0] || ''))];
+                } else if (o.type === 'BrowserTab' || isTab) {
+                    const tid = isTab ? String(o.id).slice(4) : (o.external_id || '').replace(/'/g, '');
+                    actions = '<button class="act-btn" onclick="openBrowser(\'' + esc(tid) + '\')">🪐 Open in browser (CDP frames)</button>'
+                        + '<button class="act-btn" onclick="activateTab(\'' + esc(tid) + '\')">👁 Show in Chromium</button>'
+                        + '<button class="act-btn" onclick="window.open(\'/index.html\', \'_blank\')">⌂ Browser in Shell</button>';
+                    perms = ['Navigation — action.navigate (Policy: cap on space-bridge)',
+                        'Frames — action.screenshot, read-only CDP; no input injection',
+                        'No auto-close — only explicit actions with confirmation'];
+                } else if (o.type === 'Mission') {
+                    actions = '<button class="act-btn" onclick="window.open(\'/index.html\', \'_blank\')">🎯 Open Mission in Shell</button>';
+                    if (st) actions += '<div style="font-size:.72rem;color:' + stateColor(st) + ';margin:2px 0 6px">State: ' + esc(st) + '</div>';
+                    perms = ['Transitions — server actor via Core (Policy)',
+                        'complete without passed verification forbidden'];
+                } else {
+                    actions = '<button class="act-btn" onclick="window.open(\'/index.html\', \'_blank\')">🔍 Show in Shell (objects)</button>';
+                    perms = ['Domain object Core; changes only via Observation',
+                        'Modifications — based on actor Capability per Policy'];
+                }
+                actions += '<button class="act-btn" onclick="relatedGraph()">🕸 Related objects (graph)</button>';
+                const q = objName(o).slice(0, 40).replace(/[\\'"]/g, '');
+                actions += '<button class="act-btn" onclick="quickSearch(\'' + esc(q) + '\')">🔎 Search by name</button>';
+                const relHtml = rel.slice(0, 12).map(r => {
+                    const so = byId(r.id);
+                    if (!so) return '';
+                    return '<div class="rel-item" onclick="selectObj(\'' + esc(so.id) + '\', true)"><span>' + typeIcon(so.type) + '</span><span>' + esc(trunc(objName(so), 26)) + '</span><span class="t">' + esc(r.rel) + '</span></div>';
+                }).join('') || '<div style="color:var(--dim);font-size:.76rem">No connections for object</div>';
+                sb.innerHTML = '<div class="crumbs">World <span class="sep">/</span> ' + esc((CL[cl] || {}).label || cl) + ' <span class="sep">/</span> <b>' + esc(trunc(o.title || objName(o), 24)) + '</b></div>'
+                    + '<div class="obj-card">'
+                    + '<div class="cover"><span class="cic">' + typeIcon(o.type) + '</span></div>'
+                    + '<h2>' + esc(trunc(o.title || objName(o), 42)) + '</h2>'
+                    + '<div class="sub">' + esc(o.type) + (st ? ' · ' + esc(st) : '') + '</div>'
+                    + (st === 'running' ? '<span class="obadge">Active</span>' : (st && !isTerminal(st) ? '<span class="obadge" style="color:' + stateColor(st) + '">' + esc(st) + '</span>' : ''))
+                    + '</div>'
+                    + '<div class="sec-title">Metadata <span class="r">from Core</span></div>'
+                    + metaRow('Provider', o.provider_id)
+                    + metaRow('External ID', o.external_id)
+                    + metaRow('Created', fmtWhen(o.created_at))
+                    + metaRow('Updated', fmtWhen(o.updated_at))
+                    + metaRow('World', o.world_id)
+                    + metaRow('ID', String(o.id).slice(0, 18) + '…')
+                    + (isTab ? metaRow('URL', o.url) : '')
+                    + '<div class="sec-title">Related <span class="r">' + rel.length + '</span></div>' + relHtml
+                    + '<div class="sec-title">Actions</div>' + actions
+                    + '<div class="sec-title">Access</div>' + perms.map(p => '<div class="perm"><span class="ic">🔒</span><span>' + esc(p) + '</span></div>').join('')
+                    + '<div class="sec-title">Tools</div>'
+                    + '<div class="tools">'
+                    + '<div class="tool" onclick="document.getElementById(\'q\').focus()"><span class="ic">🔍</span>Search</div>'
+                    + '<div class="tool" onclick="navGo(\'files\')"><span class="ic">📁</span>Files</div>'
+                    + '<div class="tool" onclick="navGo(\'web\')"><span class="ic">🪐</span>Web</div>'
+                    + '<div class="tool" onclick="navGo(\'events\')"><span class="ic">⚡</span>Events</div>'
+                    + '<div class="tool" onclick="window.open(\'/index.html\',\'_blank\')"><span class="ic">⌂</span>Shell</div>'
+                    + '</div>';
+                return;
+            }
+            if (W.selCluster) {
+                const name = W.selCluster, cfg = CL[name], cc = clusterCounts(name);
+                sb.innerHTML = '<div class="crumbs">World <span class="sep">/</span> <b>' + esc(cfg.label) + '</b></div>'
+                    + '<div class="obj-card"><div class="cover"><span class="cic">' + cfg.icon + '</span></div>'
+                    + '<h2>' + esc(cfg.label) + '</h2><div class="sub">SpaceOS space cluster</div>'
+                    + '<span class="obadge">' + esc(cc.total) + ' objects</span></div>'
+                    + '<div class="sec-title">Composition (by type)</div>'
+                    + (Object.keys(cc.byType).sort().map(k => '<div class="meta-row"><b>' + esc(k) + '</b><span>' + cc.byType[k] + '</span></div>').join('') || '<div style="color:var(--dim);font-size:.78rem">Domain without objects</div>')
+                    + '<div class="sec-title">Latest objects</div>'
+                    + (cc.objs.slice(0, 10).map(o => '<div class="rel-item" onclick="selectObj(\'' + esc(o.id) + '\', true)"><span>' + typeIcon(o.type) + '</span><span>' + esc(trunc(objName(o), 30)) + '</span><span class="t">' + esc(fmtTime(o.updated_at)) + '</span></div>').join('') || '<div style="color:var(--dim);font-size:.78rem">Empty</div>')
+                    + '<div class="sec-title">Actions</div>'
+                    + (name === 'Web' ? '<button class="act-btn" onclick="openBrowser()">🪐 Open embedded browser (CDP frames)</button>' : '')
+                    + '<button class="act-btn" onclick="preset(\'cluster\')">🔍 Zoom to cluster</button>'
+                    + '<button class="act-btn" onclick="setMode(\'graph\');preset(\'cluster\')">🕸 Cluster relation graph</button>'
+                    + '<div class="sec-title">Tools</div>'
+                    + '<div class="tools">'
+                    + '<div class="tool" onclick="preset(\'cluster\')"><span class="ic">🔍</span>Zoom</div>'
+                    + '<div class="tool" onclick="setMode(\'tree\')"><span class="ic">🌲</span>Tree</div>'
+                    + '<div class="tool" onclick="setMode(\'graph\')"><span class="ic">🕸</span>Graph</div>'
+                    + '<div class="tool" onclick="runScan()"><span class="ic">⏱</span>Scan</div>'
+                    + '<div class="tool" onclick="window.open(\'/index.html\',\'_blank\')"><span class="ic">⌂</span>Shell</div>'
+                    + '</div>';
+                return;
+            }
+            const actorCount = [...new Set((W.actions || []).map(r => r.actor))].filter(Boolean).length;
+            sb.innerHTML = '<div class="crumbs">World <span class="sep">/</span> <b>Core</b></div>'
+                + '<div class="obj-card"><div class="cover"><span class="cic">◉</span></div><h2>Core SpaceOS</h2>'
+                + '<div class="sub">semantic state of the whole system</div>'
+                + '<span class="obadge">SQLite — single source of truth</span></div>'
+                + '<div class="sec-title">World summary</div>'
+                + metaRow('Objects', W.objects.length)
+                + metaRow('Relations', W.relations.length)
+                + metaRow('Events (latest)', W.events.length)
+                + metaRow('Mission (total)', (W.missions || []).length)
+                + metaRow('Actors', actorCount)
+                + '<div class="sec-title">Quick access</div>'
+                + '<div class="rel-item" onclick="navGo(\'files\')"><span>📁</span><span>Files</span><span class="t">' + clusterCounts('Files').total + '</span></div>'
+                + '<div class="rel-item" onclick="navGo(\'web\')"><span>🪐</span><span>Web tabs</span><span class="t">' + ((W.tabs || []).length) + '</span></div>'
+                + '<div class="rel-item" onclick="navGo(\'missions\')"><span>🎯</span><span>Mission</span><span class="t">' + ((W.missions || []).length) + '</span></div>'
+                + '<div class="rel-item" onclick="navGo(\'projects\')"><span>🗂</span><span>Projects</span><span class="t">' + clusterCounts('Projects').total + '</span></div>'
+                + '<div class="rel-item" onclick="openArch()"><span>▦</span><span>Architecture (ASD-STE100)</span></div>'
+                + '<div class="sec-title">Access</div>'
+                + '<div class="perm"><span class="ic">🔒</span><span>All data — from Core via API/WS; UI does not change state without your explicit actions</span></div>'
+                + '<div class="sec-title">Tools</div>'
+                + '<div class="tools" style="grid-template-columns:repeat(6,1fr)">'
+                + '<div class="tool" onclick="document.getElementById(\'q\').focus()"><span class="ic">🔍</span>Search</div>'
+                + '<div class="tool" onclick="openBrowser()"><span class="ic">🪐</span>Browser</div>'
+                + '<div class="tool" onclick="runScan()"><span class="ic">⏱</span>Scan</div>'
+                + '<div class="tool" onclick="setMode(\'graph\')"><span class="ic">🕸</span>Graph</div>'
+                + '<div class="tool" onclick="openArch()"><span class="ic">▦</span>Arch</div>'
+                + '<div class="tool" onclick="window.open(\'/index.html\',\'_blank\')"><span class="ic">⌂</span>Shell</div>'
+                + '</div>';
+        }
+
+        // ============ footer / ticks ============
+        function renderFooter() {
+            const acts = (W.actions || []).slice(0, 3).map(r =>
+                esc(trunc(r.actor || '?', 12)) + ' — ' + esc(trunc(r.operation || r.status || '?', 16))
+                + ' (' + esc(r.status || '?') + ')');
+            $('ticker').textContent = acts.join('  ·  ') || 'No actions yet';
+            $('recent-chip').innerHTML = W.objects.slice().sort((a, b) => cmpTime(b, a)).slice(0, 4).map(o =>
+                '<span class="chip" onclick="selectObj(\'' + esc(o.id) + '\', true)">' + typeIcon(o.type) + ' ' + esc(trunc(nameFor(o), 14)) + '</span>').join('');
+            const wsOn = ws && ws.readyState === 1;
+            const stat = (ic, label, val, cls) => '<span class="fstat"><span class="fi">' + ic + '</span>'
+                + '<span class="ftx"><small>' + label + '</small><b class="' + (cls || '') + '">' + val + '</b></span></span>';
+            $('f-net').innerHTML = stat('📶', 'Network', wsOn ? 'WebSocket' : 'polling', wsOn ? 'ok' : 'bad');
+            const comps = W.components || {};
+            const names = Object.keys(comps);
+            const ok = names.filter(k => comps[k] && comps[k].connected).length;
+            $('f-prov').innerHTML = names.length
+                ? stat('🔌', 'Providers', ok + '/' + names.length, ok === names.length ? 'ok' : 'warn')
+                : stat('🔌', 'Providers', '—', 'bad');
+            $('f-roots').innerHTML = (W.roots && W.roots.length)
+                ? stat('🗄', 'Roots', esc(trunc(trimRoot(W.roots[0]), 22)))
+                : stat('🗄', 'Roots', '—', 'warn');
+            const active = (W.missions || []).filter(m => !isTerminal(m.state)).length;
+            $('f-missions').innerHTML = stat('🎯', 'Mission', active + ' active');
+        }
+        function renderNavCounters() {
+            const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
+            set('cnt-files', clusterCounts('Files').total);
+            set('cnt-web', (W.tabs || []).length + clusterCounts('Web').objs.length);
+            set('cnt-missions', (W.missions || []).filter(m => !isTerminal(m.state)).length);
+            set('cnt-agents', [...new Set((W.actions || []).map(r => r.actor))].filter(Boolean).length);
+            set('cnt-projects', clusterCounts('Projects').total);
+        }
+
+        // ============ real actions ============
+        async function readFile(path) {
+            if (!path) { toast('File path not found for object', true); return; }
+            try {
+                const d = await POST('/filesystem/read', { path: path }, 15000);
+                const inner = (d.result && d.result.result) || {};
+                if (inner.status && inner.status !== 'Completed') {
+                    throw new Error('action ' + inner.status + ': ' + JSON.stringify(inner.detail || {}));
+                }
+                const det = inner.detail || {};
+                $('readertitle').textContent = '📄 ' + path;
+                $('readerpre').textContent = (det.content || '').slice(0, 12000)
+                    + (det.content && det.content.length > 12000 ? '\n… (truncated, total ' + det.content.length + ' chars)' : '');
+                $('reader').classList.add('open');
+            } catch (e) { toast('Read failed: ' + trunc(e.message, 120), true); }
+        }
+        function closeReader() { $('reader').classList.remove('open'); }
+        async function activateTab(tid) {
+            try {
+                const d = await POST('/browser/activate', { target_id: tid }, 12000);
+                const st = ((d.result && d.result.result) || {}).status || 'sent';
+                toast('Tab: activate ' + st);
+                loadTabs();
+            } catch (e) { toast('Failed to activate: ' + trunc(e.message, 110), true); }
+        }
+        function relatedGraph() { if (W.selObj) { setMode('focus'); preset('detail'); } }
+        function quickSearch(q) { const i = $('q'); i.value = q; i.focus(); searchNow(q); }
+        async function runScan() {
+            const path = trimRoot(W.roots[0] || '');
+            if (!path) { toast('File system roots unknown — scanning unavailable', true); return; }
+            try {
+                const d = await POST('/filesystem/scan', { path: path }, 10000);
+                const inner = (d.result && d.result.result) || {};
+                const stt = inner.status || 'Started';
+                const aid = inner.action_id || '';
+                toast('Scan: ' + stt + (aid ? ' · job ' + aid.slice(0, 8) : ''));
+                if (aid) pollAction(aid);
+            } catch (e) { toast('Failed to start scan: ' + trunc(e.message, 110), true); }
+        }
+        async function pollAction(aid) {
+            for (let i = 0; i < 90; i++) {
+                await new Promise(r => setTimeout(r, 1000));
+                try {
+                    const d = await GET('/actions/' + aid, 8000);
+                    const inner = (d.result && d.result) || {};
+                    const res = inner.result || {};
+                    const stt = res.status || inner.status;
+                    if (stt && stt !== 'Requested' && stt !== 'Started') {
+                        toast('Scan completed: ' + stt);
+                        loadWorld();
+                        return;
+                    }
+                } catch (e) { break; }
+            }
+        }
+        function newMission() { window.open('/index.html', '_blank'); }
+
+        // ============ embedded browser panel (real CDP frames) ============
+        // Uses only the existing contract: tabs list + navigate/reload/
+        // new-tab/close/activate via bridge (Core Policy) plus a read-only
+        // `screenshot` provider action (Page.captureScreenshot). No fake
+        // page and no input injection: clicks inside the frame are not
+        // forwarded; the note in the panel says so honestly.
+        const B = { open: false, sel: null, tabs: [], timer: null, tabsTimer: null, fail: 0, last: null };
+
+        function openBrowser(tid) {
+            B.open = true;
+            $('browser').classList.add('open');
+            if (tid) B.sel = tid;
+            bfRefresh(true);
+            if (!B.timer) B.timer = setInterval(bfShot, 1500);
+            if (!B.tabsTimer) B.tabsTimer = setInterval(bfRefresh, 5000);
+        }
+        function closeBrowser() {
+            B.open = false;
+            $('browser').classList.remove('open');
+            clearInterval(B.timer); clearInterval(B.tabsTimer);
+            B.timer = B.tabsTimer = null;
+        }
+        async function bfRefresh() {
+            try {
+                const d = await GET('/browser/tabs', 10000);
+                const list = (d.result && d.result.result && d.result.result.detail && d.result.result.detail.tabs)
+                    || (d.result && d.result.result && d.result.result.tabs) || (d.result && d.result.tabs) || [];
+                B.tabs = list;
+                if (!B.sel || !list.some(t => t.target_id === B.sel)) {
+                    // Prefer a non-dashboard tab (same rule the provider
+                    // uses for its action target).
+                    const prefer = list.find(t => t.url && !/^https?:\/\/(127\.0\.0\.1|localhost):8765/.test(t.url)) || list[0];
+                    B.sel = prefer ? prefer.target_id : null;
+                }
+                bfRenderTabs(); bfShowCurrent();
+            } catch (e) {
+                $('btabs').innerHTML = '<span class="btab none">Tabs unavailable: ' + esc(trunc(e.message, 80)) + '</span>';
+                $('bstatus').textContent = 'CDP browser unavailable';
+            }
+        }
+        function bfRenderTabs() {
+            const box = $('btabs');
+            if (!B.tabs.length) { box.innerHTML = '<span class="btab none">CDP-вкладок нет — создайте вкладку</span>'; return; }
+            box.innerHTML = B.tabs.map(t => {
+                const active = t.target_id === B.sel ? ' active' : '';
+                const host = (t.url || '').replace(/^https?:\/\//, '').split('/')[0] || '—';
+                return '<span class="btab' + active + '" onclick="bfSelect(\'' + esc(t.target_id) + '\')" title="' + esc(t.url || '') + '">'
+                    + '🌐 <span class="tt">' + esc(trunc(t.title || host, 24)) + '</span>'
+                    + '<span class="x" onclick="event.stopPropagation();bfCloseTab(\'' + esc(t.target_id) + '\')" title="Close tab">✕</span></span>';
+            }).join('');
+        }
+        function bfShowCurrent() {
+            const t = B.tabs.find(x => x.target_id === B.sel);
+            const u = $('burl');
+            if (document.activeElement !== u) u.value = t ? (t.url || '') : '';
+            bfStatus();
+        }
+        function bfStatus(extra) {
+            const t = B.tabs.find(x => x.target_id === B.sel);
+            const p = [];
+            p.push(t ? ('«' + trunc(t.title || 'untitled', 40) + '»') : 'tab not selected');
+            if (t && t.url) p.push(trunc(t.url, 60));
+            if (B.last) p.push('frame ' + B.last.kb + ' КБ · ' + B.last.at);
+            if (extra) p.push(extra);
+            $('bstatus').textContent = p.join(' · ');
+        }
+        function bfSelect(tid) { B.sel = tid; bfRenderTabs(); bfShowCurrent(); bfShot(); }
+        async function bfShot() {
+            if (!B.open || document.hidden || !B.sel) return;
+            try {
+                const d = await POST('/providers/browser/actions', { action: 'screenshot', target: { target_id: B.sel, format: 'jpeg', quality: 62 } }, 20000);
+                const inner = (d.result && d.result.result) || d.result || {};
+                if (inner.status && inner.status !== 'Completed') {
+                    throw new Error('status ' + inner.status + ' ' + JSON.stringify(inner.detail || {}).slice(0, 110));
+                }
+                const data = ((inner.detail || inner).data) || '';
+                if (!data) throw new Error('empty frame');
+                const img = $('bframe');
+                img.src = 'data:image/jpeg;base64,' + data;
+                img.style.display = '';
+                $('bfempty').style.display = 'none';
+                B.fail = 0;
+                B.last = { kb: Math.round(data.length * 3 / 4 / 1024), at: new Date().toLocaleTimeString('ru-RU') };
+                bfStatus();
+            } catch (e) {
+                B.fail++;
+                bfStatus('frame failed (' + B.fail + '): ' + trunc(e.message, 70));
+                if (B.fail === 3 && B.timer) {
+                    // Back off after repeated failures instead of hammering.
+                    clearInterval(B.timer); B.timer = setInterval(bfShot, 8000);
+                    toast('Browser frames unavailable: ' + trunc(e.message, 100), true);
+                }
+            }
+        }
+        async function bfGo() {
+            const url = $('burl').value.trim();
+            if (!url || !B.sel) { toast('Specify URL and tab', true); return; }
+            try {
+                // Route through the provider contract for state sync / history.
+                const d = await POST('/providers/browser/actions', { action: 'navigate', target: { url: url, target_id: B.sel } }, 30000);
+                const inner = (d.result && d.result.result) || {};
+                if (inner.status && inner.status !== 'Completed') throw new Error('status ' + inner.status);
+                toast('Navigate: ' + trunc(url, 60));
+                setTimeout(bfRefresh, 2500);
+            } catch (e) { toast('Переход не удался: ' + trunc(e.message, 110), true); }
+        }
+        async function bfReload() {
+            if (!B.sel) return;
+            try {
+                const d = await POST('/providers/browser/actions', { action: 'reload', target: { target_id: B.sel } }, 20000);
+                const inner = (d.result && d.result.result) || {};
+                if (inner.status && inner.status !== 'Completed') throw new Error('status ' + inner.status);
+                toast('Вкладка обновлена');
+            } catch (e) { toast('Обновление не удалось: ' + trunc(e.message, 110), true); }
+        }
+        async function bfShow() {
+            if (!B.sel) return;
+            try {
+                await POST('/browser/activate', { target_id: B.sel }, 15000);
+                toast('Вкладка переключена в окне Chromium (видимый переход)');
+            } catch (e) { toast('Не удалось показать: ' + trunc(e.message, 110), true); }
+        }
+        async function bfCloseTab(tid) {
+            if (!confirm('Закрыть вкладку в браузере?')) return;
+            try {
+                await POST('/browser/close', { target_id: tid }, 15000);
+                if (B.sel === tid) B.sel = null;
+                setTimeout(bfRefresh, 400);
+            } catch (e) { toast('Закрытие не удалось: ' + trunc(e.message, 110), true); }
+        }
+        async function bfNewTab() {
+            const url = $('burl').value.trim() || 'about:blank';
+            try {
+                const d = await POST('/browser/new-tab', { url: url }, 30000);
+                const inner = (d.result && d.result.result) || {};
+                const tid = (inner.detail && inner.detail.target_id) || '';
+                if (tid) B.sel = tid;
+                toast('Вкладка создана: ' + trunc(url, 50));
+                setTimeout(bfRefresh, 600); setTimeout(bfShot, 1500);
+            } catch (e) { toast('Создание вкладки не удалось: ' + trunc(e.message, 110), true); }
+        }
+
+        // ============ search ============
+        function searchNow(q) {
+            const box = $('sdrop');
+            q = String(q || '').trim().toLowerCase();
+            if (!q) { box.style.display = 'none'; box.innerHTML = ''; return; }
+            const hits = [];
+            W.objects.forEach(o => {
+                const nm = String(objName(o)).toLowerCase();
+                if (nm.includes(q) && hits.length < 10) hits.push({ o: o, tag: o.type });
+            });
+            (W.missions || []).forEach(m => {
+                if (String(m.goal || '').toLowerCase().includes(q) && hits.length < 16) {
+                    const mo = W.objects.find(o => o.id === m.mission_id);
+                    if (mo) hits.push({ o: mo, tag: 'Mission · ' + m.state });
+                }
+            });
+            tabObjs().forEach(t => {
+                if (String(t.title).toLowerCase().includes(q) && hits.length < 20) hits.push({ o: t, tag: 'вкладка' });
+            });
+            if (!hits.length) {
+                box.innerHTML = '<div class="sd-it">Ничего не найдено в Core по «' + esc(q) + '»</div>';
+                box.style.display = 'block';
+                return;
+            }
+            box.innerHTML = hits.map(h =>
+                '<div class="sd-it" onclick="selectObj(\'' + esc(h.o.id) + '\', true); hideDrop()">' + typeIcon(h.o.type || 'BrowserTab') + '<span>' + esc(trunc(h.o.title || objName(h.o), 46)) + '</span><span class="t">' + esc(h.tag) + '</span></div>').join('');
+            box.style.display = 'block';
+        }
+        function hideDrop() { const b = $('sdrop'); b.style.display = 'none'; }
+        function toggleSidebar() { $('sidebar').classList.toggle('open'); }
+
+        // ============ architecture panel (real data) ============
+        function openArch() {
+            const mkCards = arr => arr.map(c => '<div class="lcard"><b>' + c[0] + '</b><span>' + c[1] + '</span></div>').join('');
+            const comps = W.components || {};
+            const names = Object.keys(comps); const okn = names.filter(k => comps[k] && comps[k].connected).length;
+            const stc = {}; (W.missions || []).forEach(m => { stc[m.state] = (stc[m.state] || 0) + 1; });
+            const st = k => stc[k] || 0;
+            const actors = [...new Set((W.actions || []).map(r => r.actor))].filter(Boolean).length;
+            const provs = (W.providers || []).map(p => esc(p.id) + (p.capabilities && p.capabilities.length ? ' (' + esc(p.capabilities.join(', ')) + ')' : '')).join(' · ') || '—';
+            $('archbody').innerHTML =
+                '<div class="layer l1"><div><div class="lay-head"><span class="lay-num">1</span><div><div class="lay-title">System Layer</div><div class="lay-sub">Назначение, ограничения, внешние интерфейсы</div></div></div></div>'
+                + '<div class="lay-cards">' + mkCards([
+                    ['Mission', 'Develop SpaceOS: reliable foundation + live checks (17 suites PASS)'],
+                    ['Actors', actors + ' actors in action history'],
+                    ['Constraints', 'Policy Core · roots ' + esc(trimRoot(W.roots[0] || '—'))],
+                    ['Interfaces', 'HTTP API + WebSocket /ws · MCP stdio (20 tools)']
+                ]) + '</div></div>'
+                + '<div class="layer l2"><div><div class="lay-head"><span class="lay-num">2</span><div><div class="lay-title">Logical Layer</div><div class="lay-sub">Domain, services, models, business logic</div></div></div></div>'
+                + '<div class="lay-cards">' + mkCards([
+                    ['Core Domain', W.objects.length + ' objects · ' + W.relations.length + ' relations (space/world/object)'],
+                    ['Services', 'space-bridge: HTTP/WS + Mission orchestration'],
+                    ['Data Models', 'SQLite (single source of truth) · events append-only · seq cursor'],
+                    ['Business Logic', 'Mission: ' + st('running') + ' running · confirmations + evidence']
+                ]) + '</div></div>'
+                + '<div class="layer l3"><div><div class="lay-head"><span class="lay-num">3</span><div><div class="lay-title">Physical Layer</div><div class="lay-sub">Infrastructure and processes</div></div></div></div>'
+                + '<div class="lay-cards">' + mkCards([
+                    ['Applications', 'space-core · space-bridge · 2 providers · agent-demo'],
+                    ['Infrastructure', 'pipe \\\\.\\pipe\\spaceos-core (+2) · CDP :9222'],
+                    ['Providers', provs],
+                    ['Runtime', okn + '/' + names.length + ' components online (' + names.join(', ') + ')']
+                ]) + '</div></div>'
+                + '<div class="layer l4"><div><div class="lay-head"><span class="lay-num">4</span><div><div class="lay-title">Implementation Layer</div><div class="lay-sub">Code, configuration, artifacts, documentation</div></div></div></div>'
+                + '<div class="lay-cards">' + mkCards([
+                    ['Code', 'Crates: space-core, space-bridge, browser-provider, filesystem-provider, spacetrace'],
+                    ['Configuration', 'launch.ps1 · SPACEOS_ROOT/ALLOWED_ROOTS · MCP allow-list'],
+                    ['Artifacts', 'target\\release: space-core, space-bridge, 2 providers'],
+                    ['Documentation', 'docs: ARCHITECTURE · FOUNDATION_GATE · SPACETRACE_* · PROJECT_STATUS']
+                ]) + '</div></div>'
+                + '<div class="flowline"><b style="font-size:.78rem">Flow</b>'
+                + '<span class="fchip">🎯 Goals<small>' + st('created') + '</small></span><span class="farrow">→</span>'
+                + '<span class="fchip">📋 Plan<small>' + st('planned') + '</small></span><span class="farrow">→</span>'
+                + '<span class="fchip">⚙️ Execution<small>' + st('running') + '</small></span><span class="farrow">→</span>'
+                + '<span class="fchip">⚖️ Verification<small>' + st('verifying') + '</small></span><span class="farrow">→</span>'
+                + '<span class="fchip">✅ Completed<small>' + st('completed') + '</small></span><span class="farrow">→</span>'
+                + '<span class="fchip">🟢 Operation<small>' + okn + '/' + names.length + '</small></span>'
+                + '</div>'
+                + '<div class="arch-note">Live values refreshed via Core polling (objects, relations, Mission states, components, providers, roots). Layer 4 = verified facts from last run (run_tests 17/17 · verify 35/35 · MCP 13/13). Panel matches four-layer model from UI_custom (ASD-STE100).</div>';
+            $('arch').classList.add('open');
+        }
+        function closeArch() { $('arch').classList.remove('open'); }
+
+        // ============ clock / init ============
+        function tickClock() {
+            const d = new Date();
+            $('clock').textContent = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        function init() {
+            buildStars();
+            tickClock(); setInterval(tickClock, 1000);
+            connectWs();
+            const bgi = $('bg');
+            [['#1653d8', 460, 55, 20], ['#7c3aed', 420, 12, 68], ['#0ea5e9', 360, 78, 55]].forEach(v => {
+                const d = document.createElement('div'); d.classList.add('neb');
+                d.style.width = v[1] + 'px'; d.style.height = v[1] + 'px';
+                d.style.left = v[2] + '%'; d.style.top = v[3] + '%';
+                d.style.background = 'radial-gradient(circle, ' + v[0] + '26, transparent 60%)';
+                bgi.appendChild(d);
+            });
+            const qi = $('q');
+            qi.addEventListener('input', () => searchNow(qi.value));
+            qi.addEventListener('keydown', e => { if (e.key === 'Enter') searchNow(qi.value); });
+            document.addEventListener('click', e => {
+                if (!e.target.closest('.srch') && !e.target.closest('#sdrop')) hideDrop();
+            });
+            loadWorld(); loadSide(); loadTabs();
+            setInterval(loadWorld, 20000);
+            setInterval(loadSide, 15000);
+            setInterval(loadTabs, 10000);
+            refit();
+            renderSidebar();
+        }
+        init();
+</script>
+</body>
+</html>

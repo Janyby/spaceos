@@ -1,0 +1,2912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpaceOS Shell</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #1a1a2e;
+            color: #eaeaea;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #2d2d44;
+        }
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #fff;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-badge.connected {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        .status-badge.disconnected {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        .status-badge.checking {
+            background: rgba(234, 179, 8, 0.2);
+            color: #eab308;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .dot.connected { background: #22c55e; }
+        .dot.disconnected { background: #ef4444; }
+        .dot.checking { background: #eab308; }
+        main {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        .card {
+            background: #16213e;
+            border: 1px solid #2d2d44;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .card h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card h2 .dot {
+            width: 10px;
+            height: 10px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #2d2d44;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: #888;
+            font-size: 0.875rem;
+        }
+        .info-value {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.875rem;
+        }
+        .capabilities {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .capability-tag {
+            background: #2d2d44;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            color: #aaa;
+        }
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        .btn-secondary {
+            background: #2d2d44;
+            color: #eaeaea;
+        }
+        .btn-secondary:hover {
+            background: #3d3d5c;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        .input-group {
+            margin-top: 16px;
+            display: flex;
+            gap: 8px;
+        }
+        .input-group input {
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid #2d2d44;
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: #eaeaea;
+            font-size: 0.875rem;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .log-area {
+            background: #0f172a;
+            border: 1px solid #2d2d44;
+            border-radius: 8px;
+            padding: 12px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.75rem;
+            line-height: 1.5;
+        }
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid #1e293b;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        .log-time {
+            color: #64748b;
+        }
+        .log-type {
+            font-weight: 500;
+            margin-left: 8px;
+        }
+        .log-type.info { color: #3b82f6; }
+        .log-type.success { color: #22c55e; }
+        .log-type.error { color: #ef4444; }
+        .log-type.warn { color: #eab308; }
+        .log-type.ws { color: #a855f7; }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #2d2d44;
+            padding-bottom: 8px;
+        }
+        .tab {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.15s;
+        }
+        .tab:hover {
+            color: #eaeaea;
+        }
+        .tab.active {
+            color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        .refresh-btn {
+            background: #2d2d44;
+            color: #eaeaea;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        .refresh-btn:hover {
+            background: #3d3d5c;
+        }
+        .refresh-btn:disabled {
+            opacity: 0.5;
+        }
+        .error-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #ef4444;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s;
+            z-index: 1000;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .success-toast {
+            background: #22c55e;
+        }
+
+        /* Unified Shell visual style: navy/graphite dark theme with blue accents */
+        :root {
+            --bg-primary: #0a0f1a;
+            --bg-secondary: #1a1f2e;
+            --bg-tertiary: #1e293b;
+            --bg-card: #151b27;
+            --border-primary: #2a3447;
+            --border-accent: #3b82f6;
+            --text-primary: #e8eaef;
+            --text-secondary: #8a94a6;
+            --text-tertiary: #5a6478;
+            --blue-accent: #3b82f6;
+            --blue-glow: rgba(59, 130, 246, 0.3);
+            --green: #22c55e;
+            --yellow: #eab308;
+            --red: #ef4444;
+            --purple: #a855f7;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        /* Unified top bar */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--blue-accent);
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 20px;
+            height: 20px;
+            background: var(--blue-glow);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .global-search {
+            position: relative;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .global-search input {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            transition: border-color 0.2s;
+        }
+
+        .global-search input:focus {
+            border-color: var(--blue-accent);
+            outline: none;
+            box-shadow: 0 0 0 2px var(--blue-glow);
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            margin-top: 4px;
+        }
+
+        .search-result-item {
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .search-result-item:hover {
+            background: var(--blue-glow);
+        }
+
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .top-bar-actions button {
+            background: transparent;
+            border: 1px solid var(--border-primary);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .top-bar-actions button:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-color: var(--blue-accent);
+        }
+
+        .notification-dot {
+            position: relative;
+        }
+
+        .notification-dot::after {
+            content: "";
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 8px;
+            height: 8px;
+            background: var(--red);
+            border-radius: 50%;
+            display: none;
+        }
+
+        .notification-dot.has-notifications::after {
+            display: block;
+        }
+
+        /* Left navigation */
+        .nav-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 8px;
+        }
+
+        .nav-sidebar .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .nav-sidebar .nav-item:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .nav-sidebar .nav-item.active {
+            background: var(--blue-glow);
+            color: var(--blue-accent);
+            border: 1px solid var(--blue-accent);
+        }
+
+        .nav-sidebar .nav-item .nav-icon {
+            font-size: 0.9rem;
+            width: 16px;
+            text-align: center;
+        }
+
+        .nav-sidebar .nav-divider {
+            height: 1px;
+            background: var(--border-primary);
+            margin: 8px 0;
+        }
+
+        /* World Explorer */
+        .world-explorer {
+            background: var(--bg-card);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .world-tree, .world-graph {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .tree-node {
+            padding: 4px 0;
+            cursor: pointer;
+            border-left: 2px solid transparent;
+            font-size: 0.85rem;
+        }
+
+        .tree-node:hover {
+            background: var(--blue-glow);
+        }
+
+        .tree-node.active {
+            border-left-color: var(--blue-accent);
+        }
+
+        .tree-node .node-type {
+            color: var(--blue-accent);
+            font-weight: 600;
+        }
+
+        .tree-node .node-name {
+            color: var(--text-primary);
+        }
+
+        .tree-node .node-meta {
+            color: var(--text-tertiary);
+            font-size: 0.75rem;
+            margin-left: auto;
+        }
+
+        .graph-view {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 8px;
+        }
+
+        .graph-node {
+            padding: 6px 10px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            border-left: 2px solid var(--blue-accent);
+        }
+
+        .graph-edge {
+            padding: 4px 0 4px 16px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Counters grid */
+        .counters-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 1100px) {
+            .counters-grid {
+                grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            }
+        }
+
+        .counter-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .counter-card .counter-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--blue-accent);
+        }
+
+        .counter-card .counter-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Right sidebar */
+        .sidebar-right {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .sidebar-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .sidebar-card.compact {
+            padding: 10px;
+        }
+
+        .sidebar-card h3 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        /* Bottom views */
+        .bottom-views {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            padding: 4px;
+            margin-top: 12px;
+        }
+
+        .bottom-views .view-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .bottom-views .view-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .bottom-views .view-btn.active {
+            color: var(--blue-accent);
+            background: var(--blue-glow);
+        }
+
+        /* Object detail panel */
+        .object-detail {
+            background: var(--bg-card);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .object-detail .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid var(--bg-tertiary);
+            font-size: 0.85rem;
+        }
+
+        .object-detail .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .object-detail .detail-label {
+            color: var(--text-tertiary);
+        }
+
+        .object-detail .detail-value {
+            color: var(--text-primary);
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+
+        /* SpaceTrace compact */
+        .spacetrace-compact {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .spacetrace-entry {
+            padding: 2px 0;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .spacetrace-entry .trace-actor {
+            color: var(--blue-accent);
+        }
+
+        .spacetrace-entry .trace-action {
+            color: var(--yellow);
+        }
+
+        /* Adapt: main layout uses a flex row */
+        .main-layout {
+            display: flex;
+            gap: 16px;
+        }
+
+        .main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .sidebar-right-container {
+            width: 320px;
+            min-width: 320px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-layout {
+                flex-direction: column;
+            }
+            .sidebar-right-container {
+                width: 100%;
+                min-width: 0;
+            }
+        }
+
+        .view-selector {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .view-selector button {
+            flex: 1;
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .view-selector button.active {
+            background: var(--blue-glow);
+            color: var(--blue-accent);
+            border-color: var(--blue-accent);
+        }
+
+        .world-filter {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .world-filter label {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+
+        .world-filter select {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            padding: 4px 8px;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+        }
+
+        .object-list-item {
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.82rem;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .object-list-item:hover {
+            background: var(--blue-glow);
+        }
+
+        .object-list-item .obj-type {
+            color: var(--purple);
+            font-weight: 600;
+        }
+
+        .object-list-item .obj-space {
+            color: var(--text-tertiary);
+            font-size: 0.72rem;
+        }
+
+        .object-list-item .obj-time {
+            color: var(--text-tertiary);
+            font-size: 0.72rem;
+            margin-left: auto;
+        }
+
+        .empty-state {
+            padding: 20px;
+            text-align: center;
+            color: var(--text-tertiary);
+            font-size: 0.85rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .card h2 {
+            font-size: 1rem;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-primary);
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--blue-accent);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            box-shadow: 0 0 0 2px var(--blue-glow);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-primary);
+            color: var(--text-primary);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .status-badge.connected {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--green);
+            border: 1px solid var(--green);
+        }
+
+        .status-badge.disconnected {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--red);
+            border: 1px solid var(--red);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Unified top bar -->
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <div class="logo" onclick="gotoTab('workspace')" style="cursor:pointer;">
+                    <span class="logo-icon">◈</span>
+                    <span>SpaceOS</span>
+                </div>
+                <div class="global-search">
+                    <input type="text" id="global-search" placeholder="Поиск по объектам, файлам, событиям, Mission…"
+                           oninput="onGlobalSearch(this.value)" autocomplete="off">
+                    <div id="global-search-results" class="search-results" style="display:none;"></div>
+                </div>
+            </div>
+            <div class="top-bar-right">
+                <span class="status-badge checking" id="ws-status">
+                    <span class="dot checking"></span>
+                    Подключение...
+                </span>
+                <div class="top-bar-actions">
+                    <button title="Пространственный вид мира (World)" onclick="window.location.href='/'">🌍</button>
+                    <button class="notification-dot" id="notifications-btn" title="Уведомления" onclick="showNotifications()">🔔</button>
+                    <button title="Настройки" onclick="gotoTab('system')">⚙️</button>
+                </div>
+                <div class="top-bar-actions">
+                    <span style="font-size:0.8rem;color:var(--text-secondary);">space-bridge</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-layout">
+            <!-- Left navigation sidebar -->
+            <div class="sidebar-left" style="width:220px;min-width:220px;">
+                <nav class="nav-sidebar">
+                    <div class="nav-item active" data-tab="workspace" onclick="gotoTab('workspace'); setActiveNav(this);">
+                        <span class="nav-icon">🏠</span> Главная
+                    </div>
+                    <div class="nav-divider"></div>
+                    <div class="nav-item" onclick="gotoTab('workspace'); setActiveNav(this);">
+                        <span class="nav-icon">🌍</span> World Explorer
+                    </div>
+                    <div class="nav-item" data-tab="system" onclick="gotoTab('system'); setActiveNav(this);">
+                        <span class="nav-icon">📦</span> Объекты
+                    </div>
+                    <div class="nav-divider"></div>
+                    <div class="nav-item" data-tab="tasks" onclick="gotoTab('tasks'); setActiveNav(this);">
+                        <span class="nav-icon">🎯</span> Mission
+                    </div>
+                    <div class="nav-item" data-tab="agent" onclick="gotoTab('agent'); setActiveNav(this);">
+                        <span class="nav-icon">🤖</span> Agents
+                    </div>
+                    <div class="nav-divider"></div>
+                    <div class="nav-item" data-tab="activity" onclick="gotoTab('activity'); setActiveNav(this);">
+                        <span class="nav-icon">⚡</span> События
+                    </div>
+                    <div class="nav-divider"></div>
+                    <div class="nav-item" onclick="switchWorldView('tree')">
+                        <span class="nav-icon">🌳</span> Tree
+                    </div>
+                    <div class="nav-item" onclick="switchWorldView('graph')">
+                        <span class="nav-icon">🔗</span> Graph
+                    </div>
+                    <div class="nav-item" onclick="switchWorldView('timeline')">
+                        <span class="nav-icon">📊</span> Timeline
+                    </div>
+                    <div class="nav-divider"></div>
+                    <div class="nav-item" onclick="showSpaceTrace()">
+                        <span class="nav-icon">🔬</span> SpaceTrace
+                    </div>
+                    <div class="nav-divider"></div>
+                    <div class="nav-item" data-tab="files" onclick="gotoTab('files'); setActiveNav(this);">
+                        <span class="nav-icon">📁</span> Files
+                    </div>
+                    <div class="nav-item" data-tab="browser" onclick="gotoTab('browser'); setActiveNav(this);">
+                        <span class="nav-icon">🌐</span> Browser
+                    </div>
+                    <div class="nav-divider"></div>
+                    <div class="nav-item" data-tab="system" onclick="gotoTab('system'); setActiveNav(this);">
+                        <span class="nav-icon">⚙️</span> Настройки
+                    </div>
+                </nav>
+            </div>
+
+            <!-- Main content area -->
+            <div class="main-content">
+                <!-- Tab switching preserved (hidden, controlled by nav) -->
+                <div class="tabs" style="display:none;">
+                    <button class="tab active" data-tab="workspace">Главная</button>
+                    <button class="tab" data-tab="files">Files</button>
+                    <button class="tab" data-tab="browser">Browser</button>
+                    <button class="tab" data-tab="agent">Agent</button>
+                    <button class="tab" data-tab="tasks">Tasks</button>
+                    <button class="tab" data-tab="activity">Activity</button>
+                    <button class="tab" data-tab="system">System</button>
+                </div>
+
+                <!-- Workspace Tab: enhanced landing panel -->
+                <div class="tab-content active" id="tab-workspace">
+                    <!-- World counters -->
+                    <div class="counters-grid" id="world-counters">
+                        <div class="counter-card">
+                            <div class="counter-value" id="count-objects">-</div>
+                            <div class="counter-label">Объектов</div>
+                        </div>
+                        <div class="counter-card">
+                            <div class="counter-value" id="count-relations">-</div>
+                            <div class="counter-label">Связей</div>
+                        </div>
+                        <div class="counter-card">
+                            <div class="counter-value" id="count-events">-</div>
+                            <div class="counter-label">Событий</div>
+                        </div>
+                        <div class="counter-card">
+                            <div class="counter-value" id="count-missions">-</div>
+                            <div class="counter-label">Mission активн.</div>
+                        </div>
+                        <div class="counter-card">
+                            <div class="counter-value" id="count-agents">-</div>
+                            <div class="counter-label">Агентов</div>
+                        </div>
+                    </div>
+
+                    <!-- World Explorer -->
+                    <div class="world-explorer">
+                        <div class="view-selector">
+                            <button class="view-btn active" id="btn-view-tree" onclick="switchWorldView('tree')">Tree</button>
+                            <button class="view-btn" id="btn-view-graph" onclick="switchWorldView('graph')">Graph</button>
+                            <button class="view-btn" id="btn-view-timeline" onclick="switchWorldView('timeline')">Timeline</button>
+                        </div>
+                        <div class="world-filter">
+                            <label for="world-filter">Пространство:</label>
+                            <select id="world-filter" onchange="applyWorldFilter()">
+                                <option value="">Все</option>
+                            </select>
+                            <span id="world-selected-object" style="margin-left:auto;font-size:0.75rem;color:var(--text-tertiary);"></span>
+                        </div>
+                        <div id="world-view-content" class="world-tree">
+                            <div class="empty-state">Загрузка World данных…</div>
+                        </div>
+                        <!-- Object detail when selected -->
+                        <div id="object-detail-panel" class="object-detail" style="display:none;margin-top:8px;">
+                            <div class="detail-row"><span class="detail-label">ID</span><span class="detail-value" id="detail-id"></span></div>
+                            <div class="detail-row"><span class="detail-label">Тип</span><span class="detail-value" id="detail-type"></span></div>
+                            <div class="detail-row"><span class="detail-label">Провайдер</span><span class="detail-value" id="detail-provider"></span></div>
+                            <div class="detail-row"><span class="detail-label">Обновлено</span><span class="detail-value" id="detail-updated"></span></div>
+                            <div class="detail-row"><span class="detail-label">Связи</span><span class="detail-value" id="detail-relations"></span></div>
+                        </div>
+                        <!-- Recent objects list (renderRecentObjects target; was missing from markup) -->
+                        <div style="margin-top:10px;">
+                            <div style="font-size:0.72rem;color:var(--text-tertiary);margin:0 0 6px 2px;">Недавно обновлённые объекты</div>
+                            <div id="recent-objects" class="world-tree"></div>
+                        </div>
+                    </div>
+
+                    <!-- Status card + quick nav (preserved from original) -->
+                    <div class="card">
+                        <h2>Статус системы</h2>
+                        <div id="ws-status-line" style="font-size: 0.875rem; color: #888;">Подключение…</div>
+                        <div id="ws-components" style="margin-top: 8px; font-size: 0.8rem; color: #888;"></div>
+                        <div class="btn-group" style="flex-wrap: wrap;">
+                            <button class="btn btn-secondary" onclick="gotoTab('files')">Files</button>
+                            <button class="btn btn-secondary" onclick="gotoTab('browser')">Browser</button>
+                            <button class="btn btn-secondary" onclick="gotoTab('agent')">Agent</button>
+                            <button class="btn btn-secondary" onclick="gotoTab('tasks')">Tasks</button>
+                            <button class="btn btn-secondary" onclick="gotoTab('activity')">Activity</button>
+                            <button class="btn btn-secondary" onclick="gotoTab('system')">System</button>
+                        </div>
+                    </div>
+                    <div class="card" style="margin-top: 16px;">
+                        <h2>Требует внимания</h2>
+                        <div id="ws-errors" style="font-size: 0.8rem; color: #888;">Loading…</div>
+                    </div>
+                    <div class="card" style="margin-top: 16px;">
+                        <h2>Последняя активность</h2>
+                        <div style="font-size: 0.75rem; color: #888; margin-bottom: 8px;">Новые действия (dashboard + OpenCode MCP). Полный список — в Activity.</div>
+                        <div id="ws-recent" style="font-size: 0.8rem; color: #888;">Loading…</div>
+                    </div>
+                    <div class="card" style="margin-top: 16px;">
+                        <h2>Mission</h2>
+                        <div style="font-size: 0.75rem; color: #888; margin-bottom: 8px;">Цели пользователя как запланированная работа: контекст, план, согласования, проверенный результат. Восстанавливается из Core при каждой загрузке.</div>
+                        <div class="input-group">
+                            <input type="text" id="mission-goal" placeholder="Цель, напр. исправить опечатку в notes.txt и проверить">
+                            <input type="text" id="mission-workspace" placeholder="Рабочее пространство, напр. C:\spaceos\data">
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="mission-assignee" placeholder="Исполнитель (опционально)">
+                            <button class="btn btn-primary" onclick="missionCreate()">Создать Mission</button>
+                        </div>
+                        <div id="ws-missions" style="margin-top: 8px; font-size: 0.8rem; color: #888;">Loading…</div>
+                    </div>
+        </div>
+
+        <!-- Browser Tab -->
+        <div class="tab-content" id="tab-browser">
+            <div class="card">
+                <h2>Browser Provider</h2>
+                <div class="info-row">
+                    <span class="info-label">Status</span>
+                    <span class="info-value" id="browser-status">
+                        <span class="status-badge checking"><span class="dot checking"></span>Checking...</span>
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Capabilities</span>
+                    <span class="info-value" id="browser-caps">-</span>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="navigate-url" placeholder="https://example.com" value="https://example.com">
+                    <button class="btn btn-primary" onclick="navigateBrowser()">Navigate</button>
+                </div>
+                <div style="font-size: 0.75rem; color: #888; margin-top: 6px;">Navigate retargets the current tab. To keep user tabs intact, open pages in a new tab:</div>
+                <div class="btn-group" style="margin-top: 8px;">
+                    <button class="btn btn-primary" onclick="openNewTab()">Open in new tab</button>
+                </div>
+                <div class="btn-group" style="margin-top: 8px;">
+                    <button class="btn btn-secondary" onclick="getBrowserTabs()">Get Tabs</button>
+                    <button class="btn btn-secondary" onclick="reloadBrowser()">Reload</button>
+                </div>
+                <div style="margin-top: 16px;">
+                    <h4 style="font-size: 0.875rem; margin-bottom: 8px;">Tabs <span id="tabs-updated" style="font-size: 0.7rem; color: #666; font-weight: 400;"></span></h4>
+                    <div id="tabs-list" style="font-size: 0.875rem; color: #888;">Click "Get Tabs" to load</div>
+                </div>
+                <div style="margin-top: 16px;">
+                    <h4 style="font-size: 0.875rem; margin-bottom: 8px;">Current page</h4>
+                    <div style="font-size: 0.75rem; color: #888; margin-bottom: 8px;">Text preview via CDP (no embedded rendering: sites may forbid framing).</div>
+                    <div class="btn-group" style="margin-top: 0;">
+                        <button class="btn btn-secondary" onclick="getPageContent()">Page info</button>
+                    </div>
+                    <div id="page-info" style="margin-top: 8px; font-size: 0.8rem; color: #888;">Not loaded</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Files Tab: real file manager over provider + object store -->
+        <div class="tab-content" id="tab-files">
+            <div class="card">
+                <h2>Filesystem Provider</h2>
+                <div class="info-row">
+                    <span class="info-label">Status</span>
+                    <span class="info-value" id="fs-status">
+                        <span class="status-badge checking"><span class="dot checking"></span>Checking...</span>
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Capabilities</span>
+                    <span class="info-value" id="fs-caps">-</span>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="scan-path" placeholder="C:\\" value="C:\\">
+                    <button class="btn btn-primary" onclick="scanFilesystem()">Scan</button>
+                </div>
+                <div style="margin-top: 16px;">
+                    <h4 style="font-size: 0.875rem; margin-bottom: 8px;">Result</h4>
+                    <div id="scan-result" style="font-size: 0.75rem; color: #888; font-family: monospace; white-space: pre-wrap; background: #0f172a; padding: 12px; border-radius: 8px; max-height: 300px; overflow: auto;">Click "Scan" to load</div>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 16px;">
+                <h2>Files</h2>
+                <div class="info-row">
+                    <span class="info-label">Allowed roots</span>
+                    <span class="info-value" id="fs-roots">-</span>
+                </div>
+                <div class="input-group">
+                    <select id="fs-root-select" style="flex: 1; background: #0f172a; border: 1px solid #2d2d44; border-radius: 8px; padding: 10px 12px; color: #eaeaea; font-size: 0.875rem;"></select>
+                    <button class="btn btn-secondary" onclick="loadRoots()">Load roots</button>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="fs-dir" placeholder="Directory, e.g. C:\spaceos\data">
+                    <button class="btn btn-secondary" onclick="fsBrowse()">Browse</button>
+                    <button class="btn btn-secondary" onclick="fsUp()">Up</button>
+                </div>
+                <div style="margin-top: 12px;">
+                    <h4 style="font-size: 0.875rem; margin-bottom: 8px;">Directory listing</h4>
+                    <div id="fs-list" style="font-size: 0.8rem; background: #0f172a; padding: 12px; border-radius: 8px; max-height: 260px; overflow: auto; color: #888;">Pick a root and press Browse</div>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="fs-search-q" placeholder="Search by name, e.g. hello.txt">
+                    <button class="btn btn-secondary" onclick="fsSearch()">Search</button>
+                </div>
+                <div id="fs-search-result" style="margin-top: 8px; font-size: 0.8rem; color: #888;"></div>
+                <div style="margin-top: 16px;">
+                    <h4 style="font-size: 0.875rem; margin-bottom: 8px;">Editor</h4>
+                    <div class="input-group">
+                        <input type="text" id="fs-file-path" placeholder="File path, e.g. C:\spaceos\data\hello.txt">
+                        <button class="btn btn-secondary" onclick="fsOpen()">Open</button>
+                    </div>
+                    <textarea id="fs-editor" rows="8" placeholder="File content..." style="width: 100%; margin-top: 8px; background: #0f172a; border: 1px solid #2d2d44; border-radius: 8px; padding: 10px 12px; color: #eaeaea; font-size: 0.8rem; font-family: monospace;"></textarea>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="fsCreate()">Create</button>
+                        <button class="btn btn-primary" onclick="fsSave()">Save</button>
+                        <button class="btn btn-secondary" onclick="fsPropose()">Propose as mission change</button>
+                    </div>
+                    <div id="fs-edit-status" style="margin-top: 8px; font-size: 0.8rem; color: #888;"></div>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 16px;">
+                <h2>Mission file proposals</h2>
+                <div style="font-size: 0.75rem; color: #888; margin-bottom: 8px;">Pending diffs recorded by missions (old snapshot vs proposed content). Approving here marks the step approved; the write itself still goes through Save with conflict stamps.</div>
+                <div id="mission-proposals" style="font-size: 0.8rem; color: #888;">No proposals — proposals appear after an agent records one.</div>
+                <div id="mission-diff" style="margin-top: 8px; font-size: 0.75rem; font-family: monospace; white-space: pre-wrap; background: #0f172a; padding: 12px; border-radius: 8px; max-height: 320px; overflow: auto; display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Agent Tab: actors observed in shared history (no invented presence) -->
+        <div class="tab-content" id="tab-agent">
+            <div class="card">
+                <h2>Agent</h2>
+                <div style="font-size: 0.75rem; color: #888; margin-bottom: 8px;">Actors seen in the shared action history (dashboard user, OpenCode MCP, demo agents). An actor appears after its first recorded action.</div>
+                <div id="agent-list" style="font-size: 0.8rem; color: #888;">Loading…</div>
+                <div style="margin-top: 12px;">
+                    <h4 style="font-size: 0.875rem; margin-bottom: 8px;">Mission assignments</h4>
+                    <div id="agent-missions" style="font-size: 0.8rem; color: #888;">Loading…</div>
+                </div>
+                <div class="btn-group" style="margin-top: 8px;">
+                    <button class="btn btn-secondary" onclick="fetchActionHistory()">Refresh</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasks Tab: missions + async jobs (Started without terminal event) -->
+        <div class="tab-content" id="tab-tasks">
+            <div class="card">
+                <h2>Missions</h2>
+                <div style="font-size: 0.75rem; color: #888; margin-bottom: 8px;">Planned work with steps, approvals and verified results. Every button calls a real Core-backed endpoint; nothing here is a demo.</div>
+                <div id="missions-list" style="font-size: 0.8rem; color: #888;">Loading…</div>
+                <div class="btn-group" style="margin-top: 8px;">
+                    <button class="btn btn-secondary" onclick="fetchMissions()">Refresh missions</button>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 16px;">
+                <h2>Tasks</h2>
+                <div style="font-size: 0.75rem; color: #888; margin-bottom: 8px;">Background jobs are Core actions in Queued/Running state (e.g. filesystem scans). Finished actions are listed for reference; full audit lives under Activity.</div>
+                <div id="tasks-list" style="font-size: 0.8rem; color: #888;">Loading…</div>
+                <div class="btn-group" style="margin-top: 8px;">
+                    <button class="btn btn-secondary" onclick="fetchActionHistory()">Refresh</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Tab: full shared history with actor filter -->
+        <div class="tab-content" id="tab-activity">
+            <div class="card">
+                <h2>Activity</h2>
+                <div style="font-size: 0.75rem; color: #888; margin-bottom: 8px;">Shared history: dashboard and OpenCode (MCP) actions appear here together, newest first.</div>
+                <div class="input-group">
+                    <select id="activity-filter" onchange="renderActivity()" style="flex: 1; background: #0f172a; border: 1px solid #2d2d44; border-radius: 8px; padding: 10px 12px; color: #eaeaea; font-size: 0.875rem;">
+                        <option value="">All actors</option>
+                    </select>
+                    <select id="activity-status" onchange="renderActivity()" style="flex: 1; background: #0f172a; border: 1px solid #2d2d44; border-radius: 8px; padding: 10px 12px; color: #eaeaea; font-size: 0.875rem;">
+                        <option value="">All statuses</option>
+                        <option>Queued</option>
+                        <option>Running</option>
+                        <option>Completed</option>
+                        <option>Failed</option>
+                        <option>Denied</option>
+                        <option>Unknown</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="fetchActionHistory()">Refresh history</button>
+                </div>
+                <div id="actions-history" style="font-size: 0.8rem; color: #888; margin-top: 12px;">Loading…</div>
+            </div>
+        </div>
+
+        <!-- System Tab: components, last operation lifecycle, object query, logs -->
+        <div class="tab-content" id="tab-system">
+            <div class="card">
+                <h2>System Status</h2>
+                <div id="components-grid">
+                    <!-- Components rendered here -->
+                </div>
+                <div class="btn-group" style="margin-top: 16px;">
+                    <button class="btn btn-secondary refresh-btn" id="refresh-all" onclick="refreshAll()">
+                        Refresh All
+                    </button>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 16px;">
+                <h2>Last Operation</h2>
+                <div id="last-op" style="font-size: 0.875rem; color: #888;">No operations yet. Run a browser or filesystem command.</div>
+                <div style="margin-top: 12px;">
+                    <h4 style="font-size: 0.875rem; margin-bottom: 8px;">Lifecycle (Core events by action id)</h4>
+                    <div id="last-op-events" style="font-size: 0.75rem; color: #888; font-family: monospace; white-space: pre-wrap; background: #0f172a; padding: 12px; border-radius: 8px; max-height: 220px; overflow: auto;">-</div>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 16px;">
+                <h2>Object Query</h2>
+                <div class="input-group" style="flex-wrap: wrap;">
+                    <input type="text" id="query-type" placeholder="Type (optional)">
+                    <input type="text" id="query-provider" placeholder="Provider ID (optional)">
+                    <input type="text" id="query-world" placeholder="World ID (optional)">
+                    <button class="btn btn-primary" onclick="queryObjects()">Query</button>
+                </div>
+                <div style="margin-top: 16px;">
+                    <h4 style="font-size: 0.875rem; margin-bottom: 8px;">Results</h4>
+                    <div id="objects-result" style="font-size: 0.75rem; color: #888; font-family: monospace; white-space: pre-wrap; background: #0f172a; padding: 12px; border-radius: 8px; max-height: 400px; overflow: auto;">Click "Query" to load</div>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 16px;">
+                <h2>Event Log</h2>
+                <div class="btn-group" style="margin-bottom: 12px;">
+                    <button class="btn btn-secondary" onclick="clearLogs()">Clear</button>
+                </div>
+                <div class="log-area" id="log-area">
+                    <div class="log-entry">
+                        <span class="log-time">[00:00:00]</span>
+                        <span class="log-type info">System</span>
+                        <span>Shell loaded. Connecting to bridge...</span>
+                    </div>
+                </div>
+            </div>
+            </div><!-- /tab-system -->
+
+            </div><!-- /main-content -->
+
+            <!-- Right sidebar: Mission, events, SpaceTrace -->
+            <div class="sidebar-right-container">
+                <div class="sidebar-right">
+                    <div class="sidebar-card">
+                        <h3>Активные Mission</h3>
+                        <div id="sidebar-missions" class="spacetrace-compact">Загрузка…</div>
+                    </div>
+                    <div class="sidebar-card">
+                        <h3>Последние события</h3>
+                        <div id="sidebar-events" class="spacetrace-compact">Загрузка…</div>
+                    </div>
+                    <div class="sidebar-card">
+                        <h3>SpaceTrace</h3>
+                        <div id="sidebar-spacetrace" class="spacetrace-compact">Загрузка…</div>
+                        <div style="margin-top:8px;font-size:0.72rem;color:var(--text-tertiary);">Происхождение действий: полная цепочка — по correlation_id в Activity.</div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /main-layout -->
+
+        <!-- Bottom Views quick access -->
+        <div class="bottom-views">
+            <button class="view-btn active" id="bview-tree" onclick="switchWorldView('tree'); gotoTab('workspace');">🌳 Tree</button>
+            <button class="view-btn" id="bview-graph" onclick="switchWorldView('graph'); gotoTab('workspace');">🔗 Graph</button>
+            <button class="view-btn" id="bview-timeline" onclick="switchWorldView('timeline'); gotoTab('workspace');">📊 Timeline</button>
+            <button class="view-btn" onclick="gotoTab('tasks'); setActiveNav(document.querySelector('.nav-item[data-tab=tasks]'));">🎯 Mission</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const WS_URL = 'ws://127.0.0.1:8765/ws';
+        const API_BASE = 'http://127.0.0.1:8765/api';
+
+        // State
+        let ws = null;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 10;
+
+        // DOM Elements
+        const wsStatusEl = document.getElementById('ws-status');
+        const logArea = document.getElementById('log-area');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initTabs();
+            connectWebSocket();
+            fetchComponents();
+            fetchActionHistory();
+            fetchMissions();
+            fetchWorldData();
+            fetchSidebarData();
+            // Live component status (same source as /api/components).
+            setInterval(fetchComponents, 15000);
+            setInterval(fetchActionHistory, 15000);
+            setInterval(fetchMissions, 15000);
+            setInterval(fetchWorldData, 20000);
+            setInterval(fetchSidebarData, 15000);
+        });
+
+        function setActiveNav(el) {
+            document.querySelectorAll('.nav-sidebar .nav-item').forEach(n => n.classList.remove('active'));
+            if (el) el.classList.add('active');
+        }        // If the user clicked a view in the left nav, highlight that item.
+        function setActiveNavForView(view) {
+            const name = { tree: 'Tree', graph: 'Graph', timeline: 'Timeline' }[view];
+            const item = [...document.querySelectorAll('.nav-sidebar .nav-item')]
+                .find(n => n.textContent.trim() === name);
+            if (item) setActiveNav(item);
+        }
+
+        // ---- World Explorer: real objects + relations + events from Core ----
+        window.worldState = { objects: [], relations: [], events: [], view: 'tree', worldFilter: '', selectedId: null };
+        let worldGen = 0;
+
+        async function fetchWorldData() {
+            const gen = ++worldGen;
+            try {
+                const [objResp, relResp, evResp] = await Promise.all([
+                    fetchJson(API_BASE + '/objects/query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }, 15000).then(r => apiJson(r, 'objects query')),
+                    fetchJson(API_BASE + '/relations/query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }, 15000).then(r => apiJson(r, 'relations query')),
+                    fetchJson(API_BASE + '/events?limit=50', {}, 15000).then(r => apiJson(r, 'events'))
+                ]);
+                if (gen !== worldGen) return;
+                window.worldState.objects = objResp.objects || [];
+                window.worldState.relations = relResp.relations || [];
+                window.worldState.events = evResp.events || [];
+                renderWorldCounters();
+                renderWorldFilter();
+                renderWorldView();
+                renderRecentObjects();
+            } catch (e) {
+                log('World Explorer failed: ' + e.message, 'error');
+            }
+        }
+
+        function renderWorldCounters() {
+            const s = window.worldState;
+            const objCount = s.objects.length;
+            const relCount = s.relations.length;
+            const evCount = s.events.length;
+            const missionCount = (window.lastMissions || []).filter(m => !TERMINAL_MISSION.includes(m.state)).length;
+            const agentCount = new Set((window.lastHistory || []).map(r => r.actor || '?')).size;
+            document.getElementById('count-objects').textContent = objCount;
+            document.getElementById('count-relations').textContent = relCount;
+            document.getElementById('count-events').textContent = evCount;
+            document.getElementById('count-missions').textContent = missionCount;
+            document.getElementById('count-agents').textContent = agentCount > 0 ? agentCount + '+' : '0';
+        }
+
+        function renderWorldFilter() {
+            const sel = document.getElementById('world-filter');
+            const worlds = [...new Set(window.worldState.objects.map(o => o.world_id || '').filter(w => w))].sort();
+            const cur = sel.value;
+            sel.innerHTML = '<option value="">Все</option>' + worlds.map(w =>
+                '<option value="' + escapeHtml(w) + '">' + escapeHtml(w) + '</option>').join('');
+            if (worlds.includes(cur)) sel.value = cur;
+        }
+
+        function applyWorldFilter() {
+            window.worldState.worldFilter = document.getElementById('world-filter').value;
+            renderWorldView();
+            renderRecentObjects();
+        }
+
+        function switchWorldView(view) {
+            window.worldState.view = view;
+            // Sync all view selectors (top + bottom)
+            ['btn-view-tree', 'btn-view-graph', 'btn-view-timeline'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('active', id === 'btn-view-' + view);
+            });
+            ['bview-tree', 'bview-graph', 'bview-timeline'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('active', id === 'bview-' + view);
+            });
+            const content = document.getElementById('world-view-content');
+            content.className = 'world-' + view;
+            // If user was on another tab (nav click), jump back to workspace for Tree/Graph.
+            const ws = document.getElementById('tab-workspace');
+            if (!ws.classList.contains('active') && ['tree', 'graph', 'timeline'].includes(view)) {
+                gotoTab('workspace');
+                const nav = document.querySelector('.nav-sidebar .nav-item.active');
+                if (!nav || !nav.textContent.includes('World')) setActiveNavForView(view);
+            }
+            renderWorldView();
+        }
+
+        function filteredWorld() {
+            const s = window.worldState;
+            const w = s.worldFilter;
+            return {
+                objects: w ? s.objects.filter(o => o.world_id === w) : s.objects,
+                relations: w ? s.relations.filter(r => r.world_id === w) : s.relations,
+                events: w ? s.events.filter(e => e.world_id === w) : s.events
+            };
+        }
+
+        function renderWorldView() {
+            const s = window.worldState;
+            const box = document.getElementById('world-view-content');
+            const v = filteredWorld();
+            if (s.view === 'tree') {
+                renderTreeView(v, box);
+            } else if (s.view === 'graph') {
+                renderGraphView(v, box);
+            } else if (s.view === 'timeline') {
+                renderTimelineView(v, box);
+            }
+        }
+
+        // Tree: computed hierarchy from real parent links (contains) + type grouping
+        function renderTreeView(v, box) {
+            if (!v.objects.length) {
+                box.innerHTML = '<div class="empty-state">Нет объектов. Запустите сканирование Files или откройте Browser, чтобы Core записал объекты.</div>';
+                return;
+            }
+            // Build an adjacency of "contains" + "mission_has_step" relations
+            const childrenOf = {};
+            const relByType = {};
+            v.relations.forEach(r => {
+                (relByType[r.relation_type] = relByType[r.relation_type] || []).push(r);
+            });
+            (relByType['contains'] || []).forEach(r => {
+                (childrenOf[r.source_object_id] = childrenOf[r.source_object_id] || []).push(r.target_object_id);
+            });
+            const byId = {};
+            v.objects.forEach(o => { byId[o.id] = o; });
+            const visited = {};
+            const rows = [];
+            const walk = (objId, depth) => {
+                if (visited[objId] || depth > 5) return;
+                visited[objId] = true;
+                const o = byId[objId];
+                if (o) rows.push({ o, depth });
+                (childrenOf[objId] || []).forEach(c => walk(c, depth + 1));
+            };
+            // Roots = objects that are not targets of contains
+            const isTarget = {};
+            (relByType['contains'] || []).forEach(r => { isTarget[r.target_object_id] = true; });
+            v.objects.filter(o => !isTarget[o.id]).slice(0, 40).forEach(o => walk(o.id, 0));
+            // Any objects not visited (no relations) – group by type after roots
+            v.objects.filter(o => !visited[o.id]).slice(0, 30).forEach(o => rows.push({ o, depth: 0 }));
+            if (!rows.length) {
+                box.innerHTML = '<div class="empty-state">Нет отображаемых объектов.</div>';
+                return;
+            }
+            box.innerHTML = rows.map(r => {
+                const o = r.o;
+                const name = (o.properties && (o.properties.title || (o.properties.meta && o.properties.meta.path) || (o.properties.meta && o.properties.meta.name))) || o.id.slice(0, 12) + '…';
+                const t = o.type || '?';
+                const indent = Math.min(r.depth, 5) * 14;
+                return '<div class="tree-node" style="padding-left:' + (8 + indent) + 'px;" onclick="selectWorldObject(\'' + escapeHtml(o.id).replace(/'/g, "\\'") + '\')">'
+                    + '<span class="node-type">' + escapeHtml(t) + '</span> '
+                    + '<span class="node-name">' + escapeHtml(String(name).slice(0, 60)) + '</span>'
+                    + ' <span class="node-meta">' + escapeHtml(fmtTime(o.updated_at)) + '</span>'
+                    + '</div>';
+            }).join('');
+        }
+
+        // Graph: real edges from relations (only real types, not decoration)
+        function renderGraphView(v, box) {
+            if (!v.relations.length) {
+                box.innerHTML = '<div class="empty-state">Нет связей. Отношения появляются после наблюдений с relations в Core.</div>';
+                return;
+            }
+            const byId = {};
+            v.objects.forEach(o => { byId[o.id] = o; });
+            const nameOf = o => (o && o.properties && (o.properties.title || (o.properties.meta && o.properties.meta.path) || o.properties.goal)) || (o && o.id && o.id.slice(0, 12) + '…') || '?';
+            box.innerHTML = v.relations.slice(0, 50).map(r => {
+                const src = byId[r.source_object_id];
+                const dst = byId[r.target_object_id];
+                return '<div class="graph-node">'
+                    + '<span style="color:var(--purple);">' + escapeHtml(src ? (src.type || '?') : '?') + '</span> '
+                    + escapeHtml(String(nameOf(src)).slice(0, 40))
+                    + ' <span class="graph-edge">—' + escapeHtml(r.relation_type) + '→</span> '
+                    + '<span style="color:var(--purple);">' + escapeHtml(dst ? (dst.type || '?') : '?') + '</span> '
+                    + escapeHtml(String(nameOf(dst)).slice(0, 40))
+                    + '</div>';
+            }).join('');
+        }
+
+        // Timeline: real recent events from Core events feed
+        function renderTimelineView(v, box) {
+            if (!v.events.length) {
+                box.innerHTML = '<div class="empty-state">Нет событий в текущем World.</div>';
+                return;
+            }
+            box.innerHTML = v.events.slice(0, 40).map(e => {
+                const et = e.event_type || '?';
+                const color = et === 'ActionCompleted' || et === 'FileCreated' || et === 'BrowserTabCreated' ? 'var(--green)'
+                    : (et === 'ActionFailed' || et === 'ActionDenied' ? 'var(--red)'
+                    : (et === 'ActionRequested' || et === 'ActionStarted' ? 'var(--yellow)' : 'var(--blue-accent)'));
+                const prov = e.provider_id || e.actor || '';
+                return '<div class="tree-node" style="padding:4px 0;">'
+                    + '<span style="color:' + color + ';font-weight:600;">' + escapeHtml(et) + '</span>'
+                    + '<span style="color:var(--text-tertiary);"> ' + escapeHtml(fmtTime(e.timestamp)) + '</span>'
+                    + (prov ? ' <span style="color:var(--text-tertiary);font-size:0.75rem;">· ' + escapeHtml(prov) + '</span>' : '')
+                    + '<div style="color:var(--text-tertiary);font-size:0.7rem;margin-left:10px;">seq ' + e.seq + ' · corr ' + escapeHtml(e.correlation_id || '-') + '</div>'
+                    + '</div>';
+            }).join('');
+        }
+
+        function renderRecentObjects() {
+            const box = document.getElementById('recent-objects');
+            const v = filteredWorld();
+            if (!v.objects.length) {
+                box.innerHTML = '<div class="empty-state">Нет объектов для отображения.</div>';
+                return;
+            }
+            const sorted = [...v.objects].sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || '')).slice(0, 12);
+            box.innerHTML = sorted.map(o => {
+                const name = (o.properties && (o.properties.title || (o.properties.meta && o.properties.meta.path) || (o.properties.meta && o.properties.meta.name))) || o.id.slice(0, 12) + '…';
+                return '<div class="object-list-item" onclick="selectWorldObject(\'' + escapeHtml(o.id).replace(/'/g, "\\'") + '\')">'
+                    + '<div style="display:flex;gap:8px;align-items:center;">'
+                    + '<span class="obj-type">' + escapeHtml(o.type || '?') + '</span>'
+                    + '<span>' + escapeHtml(String(name).slice(0, 50)) + '</span>'
+                    + '<span class="obj-time">' + escapeHtml(fmtTime(o.updated_at)) + '</span>'
+                    + '</div>'
+                    + '<div class="obj-space">world: ' + escapeHtml(o.world_id || '(root)') + '</div>'
+                    + '</div>';
+            }).join('');
+        }
+
+        function selectWorldObject(objId) {
+            const o = window.worldState.objects.find(x => x.id === objId);
+            if (!o) return;
+            window.worldState.selectedId = objId;
+            const panel = document.getElementById('object-detail-panel');
+            document.getElementById('detail-id').textContent = o.id.slice(0, 20) + (o.id.length > 20 ? '…' : '');
+            document.getElementById('detail-type').textContent = o.type || '-';
+            document.getElementById('detail-provider').textContent = o.provider_id || '-';
+            document.getElementById('detail-updated').textContent = o.updated_at || '-';
+            const rels = window.worldState.relations.filter(r => r.source_object_id === objId || r.target_object_id === objId);
+            document.getElementById('detail-relations').textContent = rels.length
+                ? rels.slice(0, 5).map(r => (r.source_object_id === objId ? '→' : '←') + ' ' + r.relation_type).join(', ')
+                : '(нет связей в этом World)';
+            document.getElementById('world-selected-object').textContent = o.id.slice(0, 30) + '…';
+            panel.style.display = 'block';
+        }
+
+        // ---- Right sidebar: missions, events, SpaceTrace summary ----
+        let sideGen = 0;
+        async function fetchSidebarData() {
+            const gen = ++sideGen;
+            try {
+                const evResp = await fetchJson(API_BASE + '/events?limit=30', {}, 15000).then(r => apiJson(r, 'sidebar events'));
+                if (gen !== sideGen) return;
+                window.worldState.events = evResp.events || [];
+                renderSidebarContent();
+            } catch (e) {
+                log('Sidebar data failed: ' + e.message, 'error');
+            }
+        }
+
+        function renderSidebarContent() {
+            // Active missions
+            const mBox = document.getElementById('sidebar-missions');
+            const liveMissions = (window.lastMissions || []).filter(m => !TERMINAL_MISSION.includes(m.state)).slice(0, 5);
+            if (liveMissions.length) {
+                mBox.innerHTML = liveMissions.map(m => {
+                    const v = window.missionViews[m.mission_id];
+                    const prog = (v && v.progress) || m.progress || { done: 0, total: 0 };
+                    return '<div class="spacetrace-entry" style="cursor:pointer;" onclick="gotoTab(\'tasks\'); setActiveNavMission();">'
+                        + '<span style="color:' + missionStateColor(m.state) + ';">●</span> '
+                        + escapeHtml((m.goal || '').slice(0, 30)) + ' '
+                        + '<span style="color:var(--text-tertiary);"> (' + prog.done + '/' + prog.total + ')</span>'
+                        + '<div style="color:var(--text-tertiary);font-size:0.68rem;">' + escapeHtml(m.state) + '</div>'
+                        + '</div>';
+                }).join('');
+            } else {
+                mBox.innerHTML = '<div class="empty-state" style="padding:8px;">Нет активных Mission.</div>';
+            }
+            // Recent events
+            const evBox = document.getElementById('sidebar-events');
+            const events = window.worldState.events.slice(0, 8);
+            if (events.length) {
+                evBox.innerHTML = events.map(e => {
+                    const et = e.event_type || '?';
+                    const color = et === 'ActionCompleted' ? 'var(--green)' : (et === 'ActionFailed' || et === 'ActionDenied' ? 'var(--red)' : 'var(--blue-accent)');
+                    return '<div class="spacetrace-entry" style="cursor:pointer;" onclick="openEventInActivity(\'' + escapeHtml(e.correlation_id || '').replace(/'/g, "\\'") + '\')">'
+                        + '<span style="color:' + color + ';">' + escapeHtml(et) + '</span>'
+                        + ' <span style="color:var(--text-tertiary);">' + escapeHtml(fmtTime(e.timestamp)) + '</span>'
+                        + '</div>';
+                }).join('');
+            } else {
+                evBox.innerHTML = '<div class="empty-state" style="padding:8px;">Нет событий.</div>';
+            }
+            // SpaceTrace summary (from action history: correlation chain)
+            const stBox = document.getElementById('sidebar-spacetrace');
+            const rows = (window.lastHistory || []).slice(0, 6);
+            if (rows.length) {
+                stBox.innerHTML = rows.map(r => '<div class="spacetrace-entry" style="cursor:pointer;" onclick="gotoTab(\'activity\'); setActiveNavSpaceTrace();">'
+                    + '<span class="trace-actor">' + escapeHtml((r.actor || '?').slice(0, 14)) + '</span>'
+                    + ' <span class="trace-action">' + escapeHtml((r.operation || r.status || '?').slice(0, 22)) + '</span>'
+                    + ' <span style="color:var(--text-tertiary);">' + escapeHtml(fmtTime(r.last_seen)) + '</span>'
+                    + '</div>').join('');
+            } else {
+                stBox.innerHTML = '<div class="empty-state" style="padding:8px;">Нет зарегистрированных трейсов.</div>';
+            }
+        }
+
+        function setActiveNavMission() {
+            const item = [...document.querySelectorAll('.nav-sidebar .nav-item')]
+                .find(n => n.textContent.includes('Mission'));
+            setActiveNav(item);
+        }
+
+        function setActiveNavSpaceTrace() {
+            const item = [...document.querySelectorAll('.nav-sidebar .nav-item')]
+                .find(n => n.textContent.includes('SpaceTrace'));
+            setActiveNav(item);
+        }
+
+        function openEventInActivity(corr) {
+            if (corr) {
+                window.pendingActivityCorr = corr;
+                gotoTab('activity');
+                setActiveNavSpaceTrace();
+                // Highlight: filter the history box down to this correlation chain.
+                const box = document.getElementById('actions-history');
+                const rows = (window.lastHistory || []).filter(r => (r.correlation_id || '').indexOf(corr) === 0);
+                if (rows.length) {
+                    box.innerHTML = rows.map(historyRowHtml).join('');
+                }
+            } else {
+                gotoTab('activity');
+            }
+        }
+
+        function showSpaceTrace() {
+            gotoTab('activity');
+            const item = [...document.querySelectorAll('.nav-sidebar .nav-item')]
+                .find(n => n.textContent.includes('SpaceTrace'));
+            setActiveNav(item);
+        }
+
+        function showNotifications() {
+            const bad = (window.lastHistory || []).filter(r => r.status === 'Failed' || r.status === 'Denied');
+            if (bad.length) {
+                showToast('Неудачных действий в истории: ' + bad.length + '. Подробности в Activity.', 'error');
+            } else {
+                showToast('Критических сбоев нет — проверьте Activity для деталей.', 'success');
+            }
+        }
+
+        // ---- Global search (real data from Core, not a static index) ----
+        let searchGen = 0;
+        async function onGlobalSearch(q) {
+            const box = document.getElementById('global-search-results');
+            if (!q || q.trim().length < 2) { box.style.display = 'none'; return; }
+            const gen = ++searchGen;
+            try {
+                const resp = await fetchJson(API_BASE + '/filesystem/search', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ q: q.trim(), limit: 10 })
+                }, 10000);
+                const data = await apiJson(resp, 'search');
+                if (gen !== searchGen) return;
+                const items = data.items || [];
+                // Also filter known objects (missions, tabs) by substring.
+                const missionHits = (window.lastMissions || []).filter(m => (m.goal || '').toLowerCase().includes(q.trim().toLowerCase())).slice(0, 3);
+                if (!items.length && !missionHits.length) {
+                    box.innerHTML = '<div class="search-result-item" style="color:var(--text-tertiary);">Нет совпадений (файлы ищутся только в сохранённых объектах после сканирования).</div>';
+                    box.style.display = 'block';
+                    return;
+                }
+                box.innerHTML = missionHits.map(m =>
+                    '<div class="search-result-item" onclick="openMissionFromSearch(\'' + escapeHtml(m.mission_id).replace(/'/g, "\\'") + '\')">🎯 Mission: ' + escapeHtml((m.goal || '').slice(0, 40)) + '</div>')
+                    + items.map(it =>
+                        '<div class="search-result-item" onclick="openFileFromSearch(\'' + escapeHtml(it.path || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\')">📄 ' + escapeHtml((it.path || '?').slice(-50)) + '</div>')
+                    + (data.truncated ? '<div class="search-result-item" style="color:var(--text-tertiary);">…показаны первые ' + items.length + '</div>' : '');
+                box.style.display = 'block';
+            } catch (e) {
+                box.innerHTML = '<div class="search-result-item" style="color:var(--text-tertiary);">Поиск недоступен: ' + escapeHtml(e.message.slice(0, 60)) + '</div>';
+                box.style.display = 'block';
+            }
+        }
+
+        function openMissionFromSearch(mid) {
+            document.getElementById('global-search-results').style.display = 'none';
+            gotoTab('tasks');
+        }
+
+        function openFileFromSearch(path) {
+            document.getElementById('global-search-results').style.display = 'none';
+            document.getElementById('fs-file-path').value = path;
+            gotoTab('files');
+            fsOpen();
+        }
+
+        function fmtTime(ts) {
+            if (!ts) return '';
+            try {
+                const d = new Date(ts);
+                return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            } catch (e) { return ts; }
+        }
+
+        // Tab switching (click + programmatic gotoTab for quick nav).
+        function gotoTab(name) {
+            const tabs = document.querySelectorAll('.tab');
+            let found = false;
+            tabs.forEach(t => {
+                const on = t.dataset.tab === name;
+                t.classList.toggle('active', on);
+                if (on) found = true;
+            });
+            if (!found) return;
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.add('active');
+        }
+
+        function initTabs() {
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => gotoTab(tab.dataset.tab));
+            });
+        }
+
+        // WebSocket connection
+        function connectWebSocket() {
+            ws = new WebSocket(WS_URL);
+
+            ws.onopen = () => {
+                log('Connected to bridge', 'success');
+                updateWSStatus('connected', 'WebSocket: Connected');
+                reconnectAttempts = 0;
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    handleWSMessage(msg);
+                } catch (e) {
+                    console.error('WS parse error:', e);
+                }
+            };
+
+            ws.onclose = () => {
+                log('WebSocket disconnected', 'warn');
+                updateWSStatus('disconnected', 'WebSocket: Disconnected');
+                scheduleReconnect();
+            };
+
+            ws.onerror = (err) => {
+                log('WebSocket error', 'error');
+            };
+        }
+
+        function scheduleReconnect() {
+            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                log('Max reconnect attempts reached', 'error');
+                return;
+            }
+            reconnectAttempts++;
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+            log(`Reconnecting in ${delay/1000}s (attempt ${reconnectAttempts})...`, 'warn');
+            setTimeout(connectWebSocket, delay);
+        }
+
+        function handleWSMessage(msg) {
+            if (msg.type === 'component_status') {
+                updateComponentCard(msg.component, msg.status);
+            } else if (msg.type === 'init') {
+                msg.components && Object.entries(msg.components).forEach(([name, status]) => {
+                    updateComponentCard(name, status);
+                });
+            }
+        }
+
+        function updateWSStatus(status, text) {
+            wsStatusEl.className = 'status-badge ' + status;
+            wsStatusEl.innerHTML = '<span class="dot ' + status + '"></span> ' + escapeHtml(text);
+        }
+
+        // Safe JSON fetch: never call .json() on an empty/error body.
+        // Throws an Error with HTTP status and a body snippet instead.
+        // Every poller MUST go through fetchJson (bounded): a hung
+        // request without timeout freezes its poller forever and, under
+        // Chrome's per-host socket cap, eventually starves all page
+        // traffic while curl keeps working (observed failure mode).
+        async function fetchJson(url, opts, timeoutMs) {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), timeoutMs || 20000);
+            try {
+                return await fetch(url, Object.assign({}, opts, { signal: ctrl.signal }));
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+        async function apiJson(resp, label) {
+            const text = await resp.text();
+            if (!resp.ok) {
+                // Body already consumed above, so parse the captured text.
+                let detail = text.trim().slice(0, 300);
+                if (!detail) {
+                    try {
+                        detail = JSON.stringify(JSON.parse(text));
+                    } catch (e) {
+                        detail = '(empty body)';
+                    }
+                }
+                throw new Error(label + ' HTTP ' + resp.status + ': ' + detail);
+            }
+            if (!text.trim()) {
+                throw new Error(label + ' empty response body (HTTP ' + resp.status + ')');
+            }
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                throw new Error(label + ' invalid JSON: ' + text.trim().slice(0, 200));
+            }
+        }
+
+        function renderComponentsGrid(components) {
+            const grid = document.getElementById('components-grid');
+            if (!components || !Object.keys(components).length) {
+                grid.innerHTML = '<span style="color:#888;">No components reported yet</span>';
+                return;
+            }
+            grid.innerHTML = Object.entries(components).map(([name, st]) => {
+                const badge = st.connected
+                    ? '<span class="status-badge connected"><span class="dot connected"></span>Connected</span>'
+                    : '<span class="status-badge disconnected"><span class="dot disconnected"></span>Disconnected</span>';
+                const caps = (st.capabilities || []).map(c => '<span class="capability-tag">' + escapeHtml(c) + '</span>').join(' ');
+                return '<div class="info-row"><span class="info-label">' + escapeHtml(name) + '</span>'
+                    + '<span class="info-value">' + badge + '</span></div>'
+                    + '<div style="font-size: 0.7rem; color: #888; margin: 2px 0 8px 0;">'
+                    + caps
+                    + (st.error ? ' <span style="color:#ef4444;">' + escapeHtml(st.error) + '</span>' : '')
+                    + (st.last_seen ? ' <span style="color:#666;">seen ' + escapeHtml(st.last_seen) + '</span>' : '')
+                    + '</div>';
+            }).join('');
+        }
+
+        // Component cards (+ workspace summary from the same snapshot).
+        // Generation guard: overlapping polls must not apply out of
+        // order (a slow older round would regress fresh renders).
+        window.componentsGen = window.componentsGen || 0;
+        function fetchComponents() {
+            const gen = ++window.componentsGen;
+            fetch(API_BASE + '/components')
+                .then(r => apiJson(r, 'components'))
+                .then(data => {
+                    if (gen !== window.componentsGen) return;
+                    window.lastComponents = data.components || {};
+                    renderComponentsGrid(data.components);
+                    renderWorkspace();
+                    data.components && Object.entries(data.components).forEach(([name, status]) => {
+                        updateComponentCard(name, status);
+                    });
+                })
+                .catch(err => log('Failed to fetch components: ' + err.message, 'error'));
+        }
+
+        function updateComponentCard(name, status) {
+            const statusEl = document.getElementById(name + '-status');
+            const capsEl = document.getElementById(name + '-caps');
+            if (statusEl) {
+                statusEl.innerHTML = status.connected
+                    ? '<span class="status-badge connected"><span class="dot connected"></span>Connected</span>'
+                    : '<span class="status-badge disconnected"><span class="dot disconnected"></span>Disconnected</span>';
+                if (status.error) {
+                    statusEl.innerHTML += ' <span style="color:#ef4444;font-size:0.7rem;">' + status.error + '</span>';
+                }
+            }
+            if (capsEl && status.capabilities) {
+                capsEl.innerHTML = status.capabilities.map(c => '<span class="capability-tag">' + c + '</span>').join(' ');
+            }
+        }
+
+        function refreshAll() {
+            const btn = document.getElementById('refresh-all');
+            btn.disabled = true;
+            btn.textContent = 'Refreshing...';
+            fetch(API_BASE + '/components/refresh', { method: 'POST' })
+                .then(r => apiJson(r, 'components/refresh'))
+                .then(data => {
+                    window.lastComponents = data.components || {};
+                    renderComponentsGrid(data.components);
+                    renderWorkspace();
+                    data.components && Object.entries(data.components).forEach(([name, status]) => {
+                        updateComponentCard(name, status);
+                    });
+                })
+                .catch(err => log('Refresh failed: ' + err.message, 'error'))
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.textContent = 'Refresh All';
+                });
+        }
+
+        // ---- Action lifecycle tracking ----
+        // Every Core-routed action returns {action_id, status, detail}.
+        // Terminal states: Completed / Failed / Denied. Started means an
+        // async job is running; its terminal event lands under the same
+        // action id as correlation_id (see /api/actions/:id).
+        function actionIdOf(data) {
+            return data?.result?.result?.action_id || data?.result?.action_id || null;
+        }
+
+        function actionStatusOf(data) {
+            return data?.result?.result?.status || data?.result?.status || 'Unknown';
+        }
+
+        function renderLastOp(label, actionId, status, detail) {
+            const el = document.getElementById('last-op');
+            const color = status === 'Completed' ? '#22c55e'
+                : (status === 'Started' ? '#eab308'
+                : (status === 'Denied' || status === 'Failed' ? '#ef4444' : '#888'));
+            el.innerHTML = '<div><b>' + escapeHtml(label) + '</b> '
+                + '<span style="color:' + color + ';">' + escapeHtml(status) + '</span></div>'
+                + '<div style="font-size: 0.7rem; color: #888;">action_id: ' + escapeHtml(actionId || '-') + '</div>'
+                + (detail ? '<div style="font-size: 0.7rem; color: #888;">' + escapeHtml(detail) + '</div>' : '');
+        }
+
+        async function pollActionStatus(actionId, label, triesLeft) {
+            triesLeft = (triesLeft === undefined) ? 60 : triesLeft;
+            if (!actionId || triesLeft <= 0) return;
+            try {
+                const resp = await fetch(API_BASE + '/actions/' + encodeURIComponent(actionId));
+                const data = await resp.json();
+                const events = data.events || [];
+                const box = document.getElementById('last-op-events');
+                box.textContent = events.map(e =>
+                    (e.timestamp || '?') + '  ' + (e.event_type || '?')
+                    + '  actor=' + (e.actor || '?')
+                ).join('\n') || '(no events yet)';
+                const terminal = events.find(e =>
+                    e.event_type === 'ActionCompleted'
+                    || e.event_type === 'ActionFailed'
+                    || e.event_type === 'ActionDenied');
+                if (terminal) {
+                    const finalStatus = terminal.event_type === 'ActionCompleted' ? 'Completed'
+                        : (terminal.event_type === 'ActionDenied' ? 'Denied' : 'Failed');
+                    renderLastOp(label, actionId, finalStatus, JSON.stringify(terminal.payload || {}));
+                    log(label + ' terminal: ' + terminal.event_type,
+                        terminal.event_type === 'ActionCompleted' ? 'success' : 'error');
+                    fetchActionHistory();
+                    // Tabs may have changed after navigation: refresh list.
+                    if (label.indexOf('navigate') === 0) getBrowserTabs(true);
+                    return;
+                }
+            } catch (e) {
+                log('Action poll failed: ' + e, 'error');
+                return;
+            }
+            setTimeout(() => pollActionStatus(actionId, label, triesLeft - 1), 1000);
+        }
+
+        function trackAction(label, data) {
+            const id = actionIdOf(data);
+            const status = actionStatusOf(data);
+            renderLastOp(label, id, status, null);
+            if (id && status === 'Started') {
+                log(label + ' started, job pending (action_id ' + id + ')', 'warn');
+            }
+            if (id) pollActionStatus(id, label);
+            return id;
+        }
+
+        // Browser actions
+        async function getBrowserTabs(silent) {
+            try {
+                const resp = await fetch(API_BASE + '/browser/tabs');
+                const data = await apiJson(resp, 'browser/tabs');
+                const tabs = data.result?.result?.detail?.tabs
+                    || data.result?.result?.tabs
+                    || data.result?.tabs
+                    || [];
+                renderTabs(tabs);
+                if (!silent) {
+                    const id = actionIdOf(data);
+                    if (id) renderLastOp('get_tabs', id, actionStatusOf(data), null);
+                }
+            } catch (e) {
+                log('Get tabs failed: ' + e, 'error');
+            }
+        }
+
+        function renderTabs(tabs) {
+            const container = document.getElementById('tabs-list');
+            document.getElementById('tabs-updated').textContent =
+                'updated ' + new Date().toLocaleTimeString();
+            if (!tabs.length) {
+                container.innerHTML = '<span style="color:#888;">No tabs found</span>';
+                return;
+            }
+            container.innerHTML = tabs.map(t => {
+                const id = (t.target_id || '').replace(/'/g, "\\'");
+                return '<div style="padding: 8px; background: #0f172a; border-radius: 6px; margin-bottom: 6px;">'
+                    + '<div style="font-weight: 500;">' + escapeHtml(t.title || 'Untitled') + '</div>'
+                    + '<div style="font-size: 0.7rem; color: #888;">' + escapeHtml(t.url) + '</div>'
+                    + '<div style="font-size: 0.65rem; color: #666;">ID: ' + escapeHtml(t.target_id || '') + '</div>'
+                    + '<div style="margin-top: 6px; display: flex; gap: 6px;">'
+                    + '<button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="activateTab(\'' + id + '\')">Activate</button>'
+                    + '<button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="closeTab(\'' + id + '\', \'' + escapeHtml(t.title || t.url || '').replace(/'/g, "\\'") + '\')">Close</button>'
+                    + '</div></div>';
+            }).join('');
+        }
+
+        async function openNewTab() {
+            const url = document.getElementById('navigate-url').value.trim();
+            if (!url) return;
+            try {
+                const resp = await fetch(API_BASE + '/browser/new-tab', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const data = await apiJson(resp, 'browser/new-tab');
+                trackAction('new_tab ' + url, data);
+                getBrowserTabs(true);
+            } catch (e) {
+                log('Open tab failed: ' + e, 'error');
+            }
+        }
+
+        async function activateTab(targetId) {
+            try {
+                const resp = await fetch(API_BASE + '/browser/activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_id: targetId })
+                });
+                const data = await apiJson(resp, 'browser/activate');
+                trackAction('activate_tab', data);
+            } catch (e) {
+                log('Activate failed: ' + e, 'error');
+            }
+        }
+
+        async function closeTab(targetId, label) {
+            if (!confirm('Close tab "' + (label || targetId) + '"?')) return;
+            try {
+                const resp = await fetch(API_BASE + '/browser/close', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_id: targetId })
+                });
+                const data = await apiJson(resp, 'browser/close');
+                const inner = data.result?.result ?? {};
+                if (inner.status && inner.status !== 'Completed') {
+                    throw new Error('action ' + inner.status + ': ' + JSON.stringify(inner.detail || {}));
+                }
+                trackAction('close_tab', data);
+                getBrowserTabs(true);
+            } catch (e) {
+                log('Close failed: ' + e, 'error');
+            }
+        }
+
+        async function navigateBrowser() {
+            const url = document.getElementById('navigate-url').value.trim();
+            if (!url) return;
+            try {
+                const resp = await fetch(API_BASE + '/browser/navigate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const data = await apiJson(resp, 'browser/navigate');
+                trackAction('navigate ' + url, data);
+            } catch (e) {
+                log('Navigate failed: ' + e, 'error');
+            }
+        }
+
+        async function getPageContent() {
+            const box = document.getElementById('page-info');
+            box.textContent = 'Loading…';
+            try {
+                const resp = await fetch(API_BASE + '/browser/content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await apiJson(resp, 'browser/content');
+                const inner = data.result?.result ?? {};
+                if (inner.status && inner.status !== 'Completed') {
+                    throw new Error('action ' + inner.status + ': ' + JSON.stringify(inner.detail || {}));
+                }
+                const len = data.length ?? '?';
+                box.innerHTML = '<div style="font-size: 0.75rem; color: #666;">page text: ' + escapeHtml(String(len)) + ' chars'
+                    + (data.truncated ? ' (truncated preview)' : '') + '</div>'
+                    + '<div style="margin-top: 6px; background: #0f172a; padding: 10px 12px; border-radius: 8px; max-height: 200px; overflow: auto;">'
+                    + escapeHtml(data.excerpt || '(empty)') + '</div>';
+                trackAction('get_page_content', data);
+            } catch (e) {
+                box.textContent = 'Page info failed: ' + e.message;
+                log('Page info failed: ' + e.message, 'error');
+            }
+        }
+
+        async function reloadBrowser() {
+            try {
+                const resp = await fetch(API_BASE + '/browser/reload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await apiJson(resp, 'browser/reload');
+                trackAction('reload', data);
+            } catch (e) {
+                log('Reload failed: ' + e.message, 'error');
+            }
+        }
+
+        // Filesystem actions
+        async function scanFilesystem() {
+            const path = document.getElementById('scan-path').value.trim() || '.';
+            try {
+                const resp = await fetch(API_BASE + '/filesystem/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path })
+                });
+                const data = await apiJson(resp, 'filesystem/scan');
+                const resultEl = document.getElementById('scan-result');
+                resultEl.textContent = JSON.stringify(data.result, null, 2);
+                // Scan is async: Started now, terminal event polled by id.
+                trackAction('scan ' + path, data);
+            } catch (e) {
+                log('Scan failed: ' + e, 'error');
+            }
+        }
+
+        // ---- File manager (real provider + object store) ----
+        let fsCurrentDir = '';
+
+        async function loadRoots() {
+            try {
+                const resp = await fetch(API_BASE + '/filesystem/roots');
+                const data = await apiJson(resp, 'filesystem/roots');
+                const inner = data.result?.result ?? data.result ?? {};
+                const roots = inner.roots || [];
+                const mode = inner.mode || 'unknown';
+                document.getElementById('fs-roots').textContent =
+                    mode === 'restricted' ? roots.join('; ') : 'unrestricted (legacy mode)';
+                const sel = document.getElementById('fs-root-select');
+                sel.innerHTML = roots.map(r =>
+                    '<option value="' + escapeHtml(r) + '">' + escapeHtml(r) + '</option>').join('')
+                    || '<option value="">(no roots reported)</option>';
+                if (roots.length) {
+                    document.getElementById('fs-dir').value = roots[0];
+                    fsCurrentDir = roots[0];
+                }
+                log('Roots: ' + mode, 'success');
+            } catch (e) {
+                log('Load roots failed: ' + e.message, 'error');
+            }
+        }
+
+        async function fsBrowse() {
+            const dir = document.getElementById('fs-dir').value.trim();
+            if (!dir) return;
+            fsCurrentDir = dir;
+            try {
+                const resp = await fetch(API_BASE + '/filesystem/list', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dir })
+                });
+                const data = await apiJson(resp, 'filesystem/list');
+                const items = data.items || [];
+                const box = document.getElementById('fs-list');
+                if (!items.length) {
+                    box.innerHTML = '<span style="color:#888;">Empty (or not indexed yet — run a scan)</span>';
+                    return;
+                }
+                box.innerHTML = items.map(it => {
+                    const p = it.path || '';
+                    const isDir = (it.file_type || '') === 'Directory';
+                    const label = isDir ? '[dir] ' : '[file] ';
+                    const size = (it.size !== undefined && it.size !== null) ? ' <span style="color:#666;">(' + it.size + ' B)</span>' : '';
+                    const mod = it.modified ? ' <span style="color:#666;">' + escapeHtml(it.modified) + '</span>' : '';
+                    const click = isDir
+                        ? 'onclick="fsOpenDir(\'' + escapeHtml(p).replace(/'/g, "\\'") + '\')" style="cursor:pointer;color:#7cb3ff;"'
+                        : 'onclick="fsOpenPath(\'' + escapeHtml(p).replace(/'/g, "\\'") + '\')" style="cursor:pointer;"';
+                    return '<div ' + click + '>' + label + escapeHtml(p) + size + mod + '</div>';
+                }).join('')
+                + (data.truncated ? '<div style="color:#eab308;">…truncated</div>' : '');
+            } catch (e) {
+                log('Browse failed: ' + e.message, 'error');
+            }
+        }
+
+        function fsOpenDir(dir) {
+            document.getElementById('fs-dir').value = dir;
+            fsBrowse();
+        }
+
+        function fsUp() {
+            let dir = document.getElementById('fs-dir').value.trim().replace(/[/\\]+$/, '');
+            const idx = Math.max(dir.lastIndexOf('\\'), dir.lastIndexOf('/'));
+            if (idx > 2) {
+                document.getElementById('fs-dir').value = dir.slice(0, idx);
+                fsBrowse();
+            }
+        }
+
+        function fsOpenPath(path) {
+            document.getElementById('fs-file-path').value = path;
+            fsOpen();
+        }
+
+        async function fsSearch() {
+            const q = document.getElementById('fs-search-q').value.trim();
+            if (!q) return;
+            try {
+                const resp = await fetch(API_BASE + '/filesystem/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ q })
+                });
+                const data = await apiJson(resp, 'filesystem/search');
+                const items = data.items || [];
+                const box = document.getElementById('fs-search-result');
+                box.innerHTML = items.length
+                    ? items.map(it => '<div onclick="fsOpenPath(\'' + escapeHtml(it.path || '').replace(/'/g, "\\'") + '\')" style="cursor:pointer;">'
+                        + escapeHtml(it.path || '(no path)') + '</div>').join('')
+                    : '<span style="color:#888;">No matches (scan first if the file is new)</span>';
+                log('Search "' + q + '": ' + items.length + ' match(es)', 'info');
+            } catch (e) {
+                log('Search failed: ' + e.message, 'error');
+            }
+        }
+
+        async function fsOpen() {
+            const path = document.getElementById('fs-file-path').value.trim();
+            if (!path) return;
+            try {
+                const resp = await fetch(API_BASE + '/filesystem/read', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path })
+                });
+                const data = await apiJson(resp, 'filesystem/read');
+                const inner = data.result?.result ?? {};
+                if (inner.status && inner.status !== 'Completed') {
+                    throw new Error('action ' + inner.status + ': ' + JSON.stringify(inner.detail || {}));
+                }
+                document.getElementById('fs-editor').value = (inner.detail && inner.detail.content) || '';
+                window.fsOpenModified = (inner.detail && inner.detail.modified) || null;
+                window.fsOpenSize = (inner.detail && inner.detail.size) ?? null;
+                document.getElementById('fs-edit-status').textContent =
+                    'Opened ' + path + ' (' + ((inner.detail && inner.detail.size) || '?') + ' bytes)';
+                trackAction('read ' + path, data);
+            } catch (e) {
+                document.getElementById('fs-edit-status').textContent = 'Open failed: ' + e.message;
+                log('Open failed: ' + e.message, 'error');
+            }
+        }
+
+        async function fsCreate() {
+            const path = document.getElementById('fs-file-path').value.trim();
+            const content = document.getElementById('fs-editor').value;
+            if (!path) return;
+            try {
+                const resp = await fetch(API_BASE + '/filesystem/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path, content })
+                });
+                const data = await apiJson(resp, 'filesystem/create');
+                const inner = data.result?.result ?? {};
+                if (inner.status && inner.status !== 'Completed') {
+                    throw new Error('action ' + inner.status + ': ' + JSON.stringify(inner.detail || {}));
+                }
+                document.getElementById('fs-edit-status').textContent = 'Created ' + path;
+                window.fsOpenModified = null;
+                window.fsOpenSize = null;
+                trackAction('create ' + path, data);
+                fsBrowse();
+            } catch (e) {
+                document.getElementById('fs-edit-status').textContent = 'Create failed: ' + e.message;
+                log('Create failed: ' + e.message, 'error');
+            }
+        }
+
+        async function fsSave() {
+            const path = document.getElementById('fs-file-path').value.trim();
+            const content = document.getElementById('fs-editor').value;
+            if (!path) return;
+            if (!confirm('Overwrite ' + path + '?')) return;
+            try {
+                // Optimistic concurrency: send the stamp seen on open so a
+                // concurrent change fails loudly instead of losing data.
+                // Size rides along because Windows mtime can stall across
+                // rapid successive writes.
+                const body = { path, content };
+                if (window.fsOpenModified) body.expected_modified = window.fsOpenModified;
+                if (window.fsOpenSize !== null && window.fsOpenSize !== undefined) body.expected_size = window.fsOpenSize;
+                const resp = await fetch(API_BASE + '/filesystem/write', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await apiJson(resp, 'filesystem/write');
+                const inner = data.result?.result ?? {};
+                if (inner.status && inner.status !== 'Completed') {
+                    const detail = inner.detail || {};
+                    const errText = (detail.error || '');
+                    if (errText.indexOf('conflict:') === 0) {
+                        document.getElementById('fs-edit-status').textContent =
+                            'Conflict: file changed on disk. Press Open to re-read, then save again.';
+                        log('Save conflict on ' + path + ' — re-read required', 'warn');
+                    }
+                    throw new Error('action ' + inner.status + ': ' + JSON.stringify(detail));
+                }
+                window.fsOpenModified = null;
+                window.fsOpenSize = null;
+                document.getElementById('fs-edit-status').textContent = 'Saved ' + path;
+                trackAction('write ' + path, data);
+                fsBrowse();
+            } catch (e) {
+                const el = document.getElementById('fs-edit-status');
+                if (el.textContent.indexOf('Conflict:') !== 0) {
+                    el.textContent = 'Save failed: ' + e.message;
+                }
+                log('Save failed: ' + e.message, 'error');
+            }
+        }
+
+        // Shared action history (dashboard + MCP calls together).
+        // Rows are cached so Workspace / Agent / Tasks render from the
+        // same live snapshot without extra requests.
+        window.lastHistory = [];
+        window.lastComponents = {};
+        window.historyGen = 0;
+        window.missionsGen = 0;
+
+        function statusColor(st) {
+            return st === 'Completed' ? '#22c55e'
+                : (st === 'Running' || st === 'Queued' ? '#eab308'
+                : (st === 'Denied' || st === 'Failed' ? '#ef4444' : '#888'));
+        }
+
+        function fmtMessage(m) {
+            if (m === null || m === undefined) return '';
+            const s = (typeof m === 'string') ? m : JSON.stringify(m);
+            return s.length > 160 ? s.slice(0, 160) + '…' : s;
+        }
+
+        function historyRowHtml(r) {
+            const st = r.status || '?';
+            const op = r.operation ? escapeHtml(r.operation) + ' ' : '';
+            const res = r.resource ? '<span style="color:#7cb3ff;">' + escapeHtml(r.resource) + '</span> ' : '';
+            const corr = r.correlation_id || r.action_id || '';
+            const isMission = (window.lastMissions || []).some(m => m.mission_id === corr || (corr && corr.indexOf(m.mission_id) === 0));
+            const badge = isMission ? '<span style="color:#7cb3ff;border:1px solid #7cb3ff;border-radius:4px;padding:0 4px;font-size:0.65rem;">mission</span> ' : '';
+            const msg = (r.message !== null && r.message !== undefined && r.message !== '')
+                ? '<div style="font-size: 0.7rem; color: #888;">' + escapeHtml(fmtMessage(r.message)) + '</div>' : '';
+            return '<div style="padding: 6px 0; border-bottom: 1px solid #1e293b;">'
+                + '<span style="color:' + statusColor(st) + ';font-weight:500;">' + escapeHtml(st) + '</span>'
+                + ' <span style="color:#aaa;">' + escapeHtml(r.actor || '?') + '</span> '
+                + badge
+                + ' <span style="color:#aaa;">' + op + '</span>' + res
+                + '<div style="font-size: 0.65rem; color: #666;">corr ' + escapeHtml(r.correlation_id || r.action_id || '')
+                + ' · ' + escapeHtml(r.last_seen || '') + '</div>'
+                + msg
+                + '</div>';
+        }
+
+        async function fetchActionHistory() {
+            const gen = ++window.historyGen;
+            try {
+                const resp = await fetch(API_BASE + '/actions/recent?limit=50');
+                const data = await apiJson(resp, 'actions/recent');
+                if (gen !== window.historyGen) return;
+                window.lastHistory = data.actions || [];
+                renderActivity();
+                renderWorkspace();
+                renderAgents();
+                renderTasks();
+                renderSidebarContent();
+            } catch (e) {
+                log('History failed: ' + e.message, 'error');
+            }
+        }
+
+        // Activity: full list with actor filter (options rebuilt from data).
+        function renderActivity() {
+            const rows = window.lastHistory || [];
+            const sel = document.getElementById('activity-filter');
+            const actors = [...new Set(rows.map(r => r.actor || '?'))].sort();
+            const cur = sel.value;
+            sel.innerHTML = '<option value="">All actors</option>' + actors.map(a =>
+                '<option value="' + escapeHtml(a) + '">' + escapeHtml(a) + '</option>').join('');
+            if (actors.includes(cur)) sel.value = cur;
+            const box = document.getElementById('actions-history');
+            const stSel = document.getElementById('activity-status');
+            let filtered = sel.value ? rows.filter(r => (r.actor || '?') === sel.value) : rows;
+            if (stSel.value) filtered = filtered.filter(r => (r.status || '?') === stSel.value);
+            if (!filtered.length) {
+                box.innerHTML = '<span style="color:#888;">No actions match'
+                    + ((sel.value || stSel.value) ? ' the current filters' : ' — run a command or wait for agent activity') + '</span>';
+                return;
+            }
+            box.innerHTML = filtered.map(historyRowHtml).join('');
+        }
+
+        // Workspace: connection state + component summary + latest 5.
+        function renderWorkspace() {
+            const comps = window.lastComponents || {};
+            const names = Object.keys(comps);
+            const up = names.filter(n => comps[n] && comps[n].connected).length;
+            const line = document.getElementById('ws-status-line');
+            const compBox = document.getElementById('ws-components');
+            if (!names.length) {
+                line.innerHTML = '<span style="color:#eab308;">Waiting for system status…</span>';
+                compBox.innerHTML = '';
+            } else {
+                line.innerHTML = up === names.length
+                    ? '<span style="color:#22c55e;">Система работает (' + up + '/' + names.length + ' operational)</span>'
+                    : '<span style="color:#eab308;">Degraded: ' + up + '/' + names.length + ' operational — see System</span>';
+                compBox.innerHTML = names.map(n => {
+                    const ok = comps[n] && comps[n].connected;
+                    return '<span style="margin-right:12px;color:' + (ok ? '#22c55e' : '#ef4444') + ';">● '
+                        + escapeHtml(n) + '</span>';
+                }).join('');
+            }
+            const rows = (window.lastHistory || []).slice(0, 5);
+            document.getElementById('ws-recent').innerHTML = rows.length
+                ? rows.map(historyRowHtml).join('')
+                : '<span style="color:#888;">No actions yet</span>';
+            const bad = (window.lastHistory || []).filter(r =>
+                r.status === 'Failed' || r.status === 'Denied').slice(0, 5);
+            document.getElementById('ws-errors').innerHTML = bad.length
+                ? bad.map(historyRowHtml).join('')
+                : '<span style="color:#22c55e;">Nothing failing — no Failed/Denied actions in recent history.</span>';
+        }
+
+        // Agent: one row per observed actor (presence = recorded activity).
+        function renderAgents() {
+            const rows = window.lastHistory || [];
+            const box = document.getElementById('agent-list');
+            const byActor = {};
+            rows.forEach(r => {
+                const a = r.actor || '?';
+                (byActor[a] = byActor[a] || []).push(r);
+            });
+            const actors = Object.keys(byActor).sort();
+            if (!actors.length) {
+                box.innerHTML = '<span style="color:#888;">No agent activity yet. Actors appear here after their first recorded action (dashboard user, OpenCode MCP, or demo agents).</span>';
+                return;
+            }
+            box.innerHTML = actors.map(a => {
+                const list = byActor[a];
+                const last = list[0];
+                const done = list.filter(r => r.status === 'Completed').length;
+                const bad = list.filter(r => r.status === 'Failed' || r.status === 'Denied').length;
+                return '<div style="padding: 8px; background: #0f172a; border-radius: 6px; margin-bottom: 6px;">'
+                    + '<div style="font-weight: 500;">' + escapeHtml(a) + '</div>'
+                    + '<div style="font-size: 0.75rem; color: #888;">actions: ' + list.length
+                    + ' (completed ' + done + ', failed/denied ' + bad + ')</div>'
+                    + '<div style="font-size: 0.7rem; color: #666;">last: '
+                    + '<span style="color:' + statusColor(last.status) + ';">' + escapeHtml(last.status || '?') + '</span> '
+                    + escapeHtml(last.last_seen || '') + '</div>'
+                    + '</div>';
+            }).join('');
+        }
+
+        // Tasks: live Queued/Running jobs first, then recently finished.
+        function renderTasks() {
+            const rows = window.lastHistory || [];
+            const box = document.getElementById('tasks-list');
+            if (!rows.length) {
+                box.innerHTML = '<span style="color:#888;">No tasks yet. Background jobs (e.g. filesystem scans) appear here while Running.</span>';
+                return;
+            }
+            const live = rows.filter(r => r.status === 'Running' || r.status === 'Queued');
+            const done = rows.filter(r => r.status !== 'Running' && r.status !== 'Queued').slice(0, 10);
+            let html = '';
+            if (live.length) {
+                html += '<div style="font-size: 0.75rem; color: #eab308; margin-bottom: 6px;">Running (' + live.length + ')</div>'
+                    + live.map(historyRowHtml).join('');
+            } else {
+                html += '<div style="font-size: 0.75rem; color: #888; margin-bottom: 6px;">No running jobs</div>';
+            }
+            if (done.length) {
+                html += '<div style="font-size: 0.75rem; color: #888; margin: 10px 0 6px 0;">Recently finished</div>'
+                    + done.map(historyRowHtml).join('');
+            }
+            box.innerHTML = html;
+        }
+
+        // Missions: persisted workflow objects (restored from Core, never
+        // local-only). window.missionViews maps mission_id -> full view.
+        window.lastMissions = [];
+        window.missionViews = {};
+
+        const TERMINAL_MISSION = ['completed', 'failed', 'cancelled'];
+
+        function missionStateColor(st) {
+            return st === 'completed' ? '#22c55e'
+                : (st === 'failed' || st === 'cancelled' ? '#ef4444'
+                : (st === 'awaiting_approval' ? '#eab308' : '#7cb3ff'));
+        }
+
+        async function fetchMissions() {
+            // Non-overlapping: never stack a new round onto a running one.
+            // Overlapping waves each fan out to dozens of detail GETs and
+            // starve writes behind the storage mutex (observed: plan POST
+            // applied minutes late under self-inflicted poll load).
+            if (window.missionsInflight) return;
+            window.missionsInflight = true;
+            const gen = ++window.missionsGen;
+            try {
+                const resp = await fetchJson(API_BASE + '/missions');
+                const data = await apiJson(resp, 'missions');
+                if (gen !== window.missionsGen) return;
+                window.lastMissions = data.missions || [];
+                // Full views for live missions (small count by design).
+                const live = window.lastMissions.filter(m => !TERMINAL_MISSION.includes(m.state)).slice(0, 20);
+                const old = window.lastMissions.filter(m => TERMINAL_MISSION.includes(m.state)).slice(0, 10);
+                for (const m of live.concat(old)) {
+                    try {
+                        const r = await fetchJson(API_BASE + '/missions/' + encodeURIComponent(m.mission_id));
+                        const d = await apiJson(r, 'mission detail');
+                        if (gen !== window.missionsGen) return;
+                        window.missionViews[m.mission_id] = d;
+                    } catch (e) {
+                        window.missionDetailErrors = window.missionDetailErrors || {};
+                        window.missionDetailErrors[m.mission_id] = String((e && e.message) || e).slice(0, 200);
+                    }
+                }
+                renderMissions();
+                renderWorkspaceMissions();
+                renderAgentMissions();
+                renderProposals();
+                renderActivity();
+                renderSidebarContent();
+                renderWorldCounters();
+            } catch (e) {
+                log('Missions failed: ' + e.message, 'error');
+            } finally {
+                // Release only if no newer round took over meanwhile.
+                if (gen === window.missionsGen) window.missionsInflight = false;
+            }
+        }
+
+        async function missionApi(method, url, body) {
+            const resp = await fetchJson(API_BASE + url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: body ? JSON.stringify(body) : undefined,
+            });
+            const data = await apiJson(resp, url);
+            if (data.ok === false) throw new Error(data.error || ('mission call failed: ' + url));
+            return data;
+        }
+
+        async function missionCreate() {
+            const goal = document.getElementById('mission-goal').value.trim();
+            const workspace = document.getElementById('mission-workspace').value.trim() || 'C:\\spaceos\\data';
+            const assignee = document.getElementById('mission-assignee').value.trim();
+            if (!goal) { showToast('Mission goal must not be empty'); return; }
+            try {
+                const data = await missionApi('POST', '/missions', { goal: goal, workspace: workspace, assignee: assignee });
+                log('Mission created: ' + data.mission.id, 'success');
+                document.getElementById('mission-goal').value = '';
+                await fetchMissions();
+                gotoTab('tasks');
+            } catch (e) { showToast('Create mission failed: ' + e.message); }
+        }
+
+        async function missionPlan(missionId) {
+            const raw = prompt('Plan steps, one per line. Prefix a line with ! when the step needs approval before completing:');
+            if (raw === null) return;
+            const steps = raw.split('\n').map(s => s.trim()).filter(s => s.length).map(s => {
+                const req = s.startsWith('!');
+                return { title: req ? s.slice(1).trim() : s, detail: '', requires_approval: req };
+            });
+            if (!steps.length) { showToast('Plan needs at least one step'); return; }
+            try {
+                await missionApi('POST', '/missions/' + encodeURIComponent(missionId) + '/plan', { steps: steps });
+                log('Plan recorded for ' + missionId, 'success');
+                await fetchMissions();
+            } catch (e) { showToast('Plan failed: ' + e.message); }
+        }
+
+        async function missionTransition(missionId, to, extra) {
+            if (window.missionBusy && window.missionBusy[missionId]) {
+                showToast('Mission update already in flight — please wait');
+                return;
+            }
+            window.missionBusy = window.missionBusy || {};
+            window.missionBusy[missionId] = true;
+            try {
+                await missionApi('POST', '/missions/' + encodeURIComponent(missionId) + '/transition', { to: to, extra: extra || {} });
+                await fetchMissions();
+                fetchActionHistory();
+            } catch (e) { showToast('Mission transition failed: ' + e.message); }
+            finally { window.missionBusy[missionId] = false; }
+        }
+
+        async function missionVerify(missionId, passed) {
+            const detail = prompt(passed ? 'Verification evidence (what proves the result):' : 'Failure evidence:');
+            if (detail === null) return;
+            try {
+                await missionApi('POST', '/missions/' + encodeURIComponent(missionId) + '/transition', { to: 'verifying', extra: {} })
+                    .catch(() => null);
+                const resp = await fetchJson(API_BASE + '/missions/' + encodeURIComponent(missionId) + '/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ passed: passed, method: 'manual-check', detail: { note: detail } }),
+                });
+                const data = await apiJson(resp, 'mission verify');
+                if (data.ok === false) throw new Error(data.error || 'verify failed');
+                await fetchMissions();
+            } catch (e) { showToast('Verify failed: ' + e.message); }
+        }
+
+        async function stepTransition(missionId, stepId, to, needsEvidence) {
+            let extra = {};
+            if (needsEvidence) {
+                const ev = prompt('Evidence for this step (what was done / observed):');
+                if (ev === null) return;
+                extra.evidence = ev;
+            }
+            const key = missionId + ':' + stepId;
+            if (window.missionBusy && window.missionBusy[key]) {
+                showToast('Step update already in flight — please wait');
+                return;
+            }
+            window.missionBusy = window.missionBusy || {};
+            window.missionBusy[key] = true;
+            try {
+                await missionApi('POST', '/missions/' + encodeURIComponent(missionId) + '/steps/' + encodeURIComponent(stepId) + '/transition', { to: to, extra: extra });
+                await fetchMissions();
+                fetchActionHistory();
+            } catch (e) { showToast('Step transition failed: ' + e.message); }
+            finally { window.missionBusy[key] = false; }
+        }
+
+        function missionButtons(m) {
+            const id = "'" + m.mission_id + "'";
+            const b = [];
+            if (m.state === 'created') b.push('<button class="btn btn-secondary" onclick="missionPlan(' + id + ')">Plan steps</button>');
+            if (m.state === 'planned') b.push('<button class="btn btn-primary" onclick="missionTransition(' + id + ', \'running\')">Start</button>');
+            if (m.state === 'running') {
+                b.push('<button class="btn btn-secondary" onclick="missionTransition(' + id + ', \'awaiting_approval\')">Request approval</button>');
+                b.push('<button class="btn btn-secondary" onclick="missionTransition(' + id + ', \'verifying\')">Verify</button>');
+            }
+            if (m.state === 'awaiting_approval') b.push('<button class="btn btn-primary" onclick="missionTransition(' + id + ', \'running\')">Approve & resume</button>');
+            if (m.state === 'verifying') {
+                b.push('<button class="btn btn-primary" onclick="missionVerify(' + id + ', true)">Record pass</button>');
+                b.push('<button class="btn btn-secondary" onclick="missionVerify(' + id + ', false)">Record fail</button>');
+            }
+            if (m.state === 'failed') b.push('<button class="btn btn-primary" onclick="missionTransition(' + id + ', \'running\')">Resume</button>');
+            if (!TERMINAL_MISSION.includes(m.state)) b.push('<button class="btn btn-secondary" onclick="missionCancel(' + id + ')">Cancel</button>');
+            return b.join(' ');
+        }
+
+        async function missionCancel(missionId) {
+            if (!confirm('Cancel mission ' + missionId + '? Executed work stays; pending steps are skipped.')) return;
+            const reason = prompt('Cancel reason (optional):') || '';
+            missionTransition(missionId, 'cancelled', { reason: reason });
+        }
+
+        function stepButtons(missionId, s) {
+            const st = (s.properties && s.properties.state) || '?';
+            const mid = "'" + missionId + "'";
+            const sid = "'" + s.id + "'";
+            const b = [];
+            if (st === 'pending') b.push('<button class="btn btn-secondary" onclick="stepTransition(' + mid + ', ' + sid + ', \'running\')">Start</button>');
+            if (st === 'running') {
+                b.push('<button class="btn btn-secondary" onclick="stepTransition(' + mid + ', ' + sid + ', \'awaiting_approval\')">Request approval</button>');
+                b.push('<button class="btn btn-primary" onclick="stepTransition(' + mid + ', ' + sid + ', \'completed\', true)">Complete</button>');
+                b.push('<button class="btn btn-secondary" onclick="stepTransition(' + mid + ', ' + sid + ', \'failed\', true)">Fail</button>');
+            }
+            if (st === 'awaiting_approval') b.push('<button class="btn btn-primary" onclick="stepTransition(' + mid + ', ' + sid + ', \'running\')">Approve</button>');
+            if (st === 'failed') b.push('<button class="btn btn-secondary" onclick="stepTransition(' + mid + ', ' + sid + ', \'running\')">Retry</button>');
+            return b.join(' ');
+        }
+
+        function renderMissions() {
+            const box = document.getElementById('missions-list');
+            const list = window.lastMissions || [];
+            if (!list.length) {
+                box.innerHTML = '<span style="color:#888;">No missions yet — create one from the Workspace tab.</span>';
+                return;
+            }
+            box.innerHTML = list.map(m => {
+                const v = window.missionViews[m.mission_id];
+                const steps = (v && v.steps) || [];
+                const prog = (v && v.progress) || m.progress || { done: 0, total: 0 };
+                const needsAttention = (m.state === 'awaiting_approval') || steps.some(s =>
+                    (s.properties && s.properties.state) === 'awaiting_approval');
+                let html = '<div style="padding: 10px; background: #0f172a; border-radius: 8px; margin-bottom: 8px;'
+                    + (needsAttention ? ' border: 1px solid #eab308;' : '') + '">'
+                    + '<div><span style="color:' + missionStateColor(m.state) + ';font-weight:600;">' + escapeHtml(m.state) + '</span>'
+                    + ' <span style="color:#aaa;">' + escapeHtml(m.goal || '') + '</span></div>'
+                    + '<div style="font-size: 0.7rem; color: #666;">' + escapeHtml(m.mission_id) + ' · '
+                    + escapeHtml(m.workspace || '') + ' · progress ' + prog.done + '/' + prog.total
+                    + (m.assignee ? ' · assignee ' + escapeHtml(m.assignee) : '') + '</div>';
+                if (m.state === 'completed' && v && v.mission.properties && v.mission.properties.result) {
+                    html += '<div style="font-size: 0.75rem; color: #22c55e;">result: ' + escapeHtml(JSON.stringify(v.mission.properties.result)).slice(0, 200) + '</div>';
+                }
+                html += '<div style="margin-top: 6px;">' + steps.map(s => {
+                    const p = s.properties || {};
+                    const sst = p.state || '?';
+                    const aids = (p.action_ids || []).length;
+                    return '<div style="padding: 4px 0 4px 12px; border-left: 2px solid #1e293b; margin: 4px 0;">'
+                        + '<span style="color:' + missionStateColor(sst === 'completed' ? 'completed' : (sst === 'failed' ? 'failed' : 'running')) + ';">●</span> '
+                        + '<b>' + escapeHtml(p.title || s.id) + '</b> '
+                        + '<span style="color:#888;">[' + escapeHtml(sst) + ']</span>'
+                        + (p.requires_approval ? ' <span style="color:#eab308;">needs-approval' + (p.approved ? '(approved)' : '') + '</span>' : '')
+                        + (aids ? ' <span style="color:#666;">actions:' + aids + '</span>' : '')
+                        + (p.evidence ? '<div style="font-size: 0.7rem; color: #888;">evidence: ' + escapeHtml(String(p.evidence)).slice(0, 200) + '</div>' : '')
+                        + (p.proposal ? '<div style="font-size: 0.7rem; color: #7cb3ff;">proposal: ' + escapeHtml(String(p.proposal.path || '')) + ' <a href="#" onclick="showProposal(\'' + m.mission_id + '\', \'' + s.id + '\'); return false;">view diff</a></div>' : '')
+                        + '<div style="margin-top: 4px;">' + stepButtons(m.mission_id, s) + '</div>'
+                        + '</div>';
+                }).join('') + '</div>';
+                html += '<div style="margin-top: 6px;" class="btn-group">' + missionButtons(m) + '</div></div>';
+                return html;
+            }).join('');
+        }
+
+        function renderWorkspaceMissions() {
+            const box = document.getElementById('ws-missions');
+            if (!box) return;
+            const live = (window.lastMissions || []).filter(m => !TERMINAL_MISSION.includes(m.state));
+            if (!live.length) {
+                box.innerHTML = '<span style="color:#888;">No active missions.</span>';
+                return;
+            }
+            box.innerHTML = live.map(m => {
+                const v = window.missionViews[m.mission_id];
+                const prog = (v && v.progress) || m.progress || { done: 0, total: 0 };
+                return '<div style="padding: 4px 0;">'
+                    + '<span style="color:' + missionStateColor(m.state) + ';font-weight:600;">' + escapeHtml(m.state) + '</span> '
+                    + escapeHtml(m.goal || '') + ' <span style="color:#666;">(' + prog.done + '/' + prog.total + ')</span></div>';
+            }).join('');
+        }
+
+        function renderAgentMissions() {
+            const box = document.getElementById('agent-missions');
+            if (!box) return;
+            const withAssignee = (window.lastMissions || []).filter(m => m.assignee);
+            if (!withAssignee.length) {
+                box.innerHTML = '<span style="color:#888;">No assigned missions. Assignment is set at creation; execution state comes from Core, not presence.</span>';
+                return;
+            }
+            box.innerHTML = withAssignee.slice(0, 10).map(m =>
+                '<div style="padding: 4px 0;"><span style="color:#aaa;">' + escapeHtml(m.assignee) + '</span> → '
+                + '<span style="color:' + missionStateColor(m.state) + ';">' + escapeHtml(m.state) + '</span> '
+                + '<span style="color:#666;">' + escapeHtml((m.goal || '').slice(0, 80)) + '</span></div>'
+            ).join('');
+        }
+
+        // Simple line diff (common prefix/suffix trim) for proposal review.
+        function lineDiff(oldText, newText) {
+            const a = (oldText || '').split('\n');
+            const b = (newText || '').split('\n');
+            let pre = 0;
+            while (pre < a.length && pre < b.length && a[pre] === b[pre]) pre++;
+            let suf = 0;
+            while (suf < a.length - pre && suf < b.length - pre && a[a.length - 1 - suf] === b[b.length - 1 - suf]) suf++;
+            const out = [];
+            for (let i = 0; i < pre; i++) out.push('  ' + a[i]);
+            for (let i = pre; i < a.length - suf; i++) out.push('- ' + a[i]);
+            for (let i = pre; i < b.length - suf; i++) out.push('+ ' + b[i]);
+            for (let i = a.length - suf; i < a.length; i++) out.push('  ' + a[i]);
+            return out.join('\n');
+        }
+
+        function showProposal(missionId, stepId) {
+            const v = window.missionViews[missionId];
+            const s = v && v.steps.find(x => x.id === stepId);
+            const p = s && s.properties && s.properties.proposal;
+            const box = document.getElementById('mission-diff');
+            if (!p) { box.style.display = 'none'; return; }
+            box.style.display = 'block';
+            box.textContent = '--- ' + p.path + ' (disk snapshot)\n+++ proposed\n'
+                + lineDiff(p.old_content, p.new_content);
+            gotoTab('files');
+        }
+
+        function renderProposals() {
+            const box = document.getElementById('mission-proposals');
+            if (!box) return;
+            const found = [];
+            Object.values(window.missionViews || {}).forEach(v => {
+                (v.steps || []).forEach(s => {
+                    if (s.properties && s.properties.proposal) {
+                        found.push({ mission: v.mission.id, step: s.id, path: s.properties.proposal.path });
+                    }
+                });
+            });
+            if (!found.length) {
+                box.innerHTML = 'No proposals — proposals appear after an agent records one.';
+                return;
+            }
+            box.innerHTML = found.map(f =>
+                '<div style="padding: 4px 0;"><span style="color:#7cb3ff;">' + escapeHtml(f.path) + '</span> '
+                + '<span style="color:#666;">' + escapeHtml(f.mission) + ' / ' + escapeHtml(f.step) + '</span> '
+                + '<a href="#" onclick="showProposal(\'' + f.mission + '\', \'' + f.step + '\'); return false;">view diff</a></div>'
+            ).join('');
+        }
+
+        async function fsPropose() {
+            const path = document.getElementById('fs-file-path').value.trim();
+            const content = document.getElementById('fs-editor').value;
+            if (!path) { showToast('Open a file first, then propose'); return; }
+            const live = (window.lastMissions || []).filter(m => !TERMINAL_MISSION.includes(m.state));
+            if (!live.length) { showToast('Create a mission first'); return; }
+            // Attach to the first running/pending step of the newest live mission.
+            const mid = live[0].mission_id;
+            const v = window.missionViews[mid];
+            const step = v && v.steps.find(s => ['pending', 'running'].includes((s.properties || {}).state));
+            if (!step) { showToast('No pending/running step in ' + mid); return; }
+            try {
+                await missionApi('POST', '/missions/' + encodeURIComponent(mid) + '/steps/' + encodeURIComponent(step.id) + '/proposal',
+                    { path: path, new_content: content });
+                log('Proposal recorded on ' + step.id, 'success');
+                await fetchMissions();
+            } catch (e) { showToast('Propose failed: ' + e.message); }
+        }
+
+        // Object query
+        async function queryObjects() {
+            const query = {};
+            const type = document.getElementById('query-type').value.trim();
+            const provider = document.getElementById('query-provider').value.trim();
+            const world = document.getElementById('query-world').value.trim();
+            if (type) query.type = type;
+            if (provider) query.provider_id = provider;
+            if (world) query.world_id = world;
+
+            try {
+                const resp = await fetch(API_BASE + '/objects/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                const data = await apiJson(resp, 'objects/query');
+                document.getElementById('objects-result').textContent = JSON.stringify(data, null, 2);
+                if (data.count === 0) {
+                    log('Query returned 0 objects — run a scan first, then query again', 'warn');
+                } else {
+                    log('Query returned ' + data.count + ' objects', 'success');
+                }
+            } catch (e) {
+                log('Query failed: ' + e, 'error');
+            }
+        }
+
+        // Logging
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const time = new Date().toLocaleTimeString();
+            entry.innerHTML = `
+                <span class="log-time">[${time}]</span>
+                <span class="log-type ${type}">${type.toUpperCase()}</span>
+                <span>${escapeHtml(message)}</span>
+            `;
+            logArea.appendChild(entry);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function clearLogs() {
+            logArea.innerHTML = '';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Toast notifications
+        function showToast(message, type = 'error') {
+            const toast = document.createElement('div');
+            toast.className = 'error-toast' + (type === 'success' ? ' success-toast' : '');
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+    </script>
+</body>
+</html>

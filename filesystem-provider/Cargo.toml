@@ -1,0 +1,25 @@
+[package]
+name = "filesystem-provider"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+notify.workspace = true
+mime_guess.workspace = true
+space-core = { path = "../space-core" }
+spacetrace = { path = "../spacetrace" }
+# CDP observer (browser source): WS client + stream polling only.
+tokio-tungstenite = "0.27"
+futures-util = "0.3"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Threading", "Win32_System_Diagnostics_ToolHelp"] }
