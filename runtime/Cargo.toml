@@ -1,0 +1,33 @@
+[package]
+name = "runtime"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "spaceos"
+path = "src/main.rs"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+anyhow.workspace = true
+chrono.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+uuid.workspace = true
+space-core = { path = "../space-core" }
+filesystem-provider = { path = "../filesystem-provider" }
+spacetrace = { path = "../spacetrace" }
+
+# Required for native Wry window (vertical slice). See MIGRATION_AUDIT_PLAN.md.
+winit = { version = "0.30", optional = true }
+
+[features]
+default = []
+wry-wrapper = ["wry", "winit"]
+
+[dependencies.wry]
+version = "0.45"
+optional = true
+features = ["os-webview"]

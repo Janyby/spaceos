@@ -1,0 +1,2961 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpaceOS World</title>
+<style>
+    :root {
+        /* Core palette */
+        --bg: #02060d;
+        --bg-deep: #050b17;
+        --ink: #eef6ff;
+        --ink-dim: #b8c6d9;
+        --muted: #9fb3cf;
+        --dim: #6e7e96;
+        --glass: rgba(8, 12, 26, 0.74);
+        --glass-hover: rgba(8, 12, 26, 0.85);
+        --line: rgba(56, 189, 248, 0.18);
+        --line-strong: rgba(56, 189, 248, 0.42);
+        --blue: #38bdf8;
+        --blue-deep: #2563eb;
+        --blue-hover: #7dd3fc;
+        --cyan: #22d3ee;
+        --purple: #a78bfa;
+        --green: #34d399;
+        --green-hover: #86efac;
+        --amber: #f59e0b;
+        --amber-hover: #fbbf24;
+        --red: #f87171;
+        --red-hover: #fb7185;
+        --navW: 224px;
+        --sideW: 360px;
+        --topH: 60px;
+        --footH: 70px;
+        --c-accent: #38bdf8;
+
+        /* Spacing scale */
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-5: 20px;
+        --space-6: 24px;
+        --space-8: 32px;
+
+        /* Typography scale */
+        --text-xs: 0.6875rem;
+        --text-sm: 0.75rem;
+        --text-base: 0.875rem;
+        --text-lg: 1rem;
+        --text-xl: 1.125rem;
+        --text-2xl: 1.25rem;
+        --text-3xl: 1.5rem;
+
+        /* Border radius */
+        --radius-sm: 6px;
+        --radius-md: 9px;
+        --radius-lg: 14px;
+        --radius-xl: 20px;
+        --radius-full: 9999px;
+
+        /* Shadows */
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+
+        /* Transitions */
+        --trans-fast: 150ms ease;
+        --trans-base: 250ms ease;
+        --trans-slow: 350ms ease;
+    }
+
+    /* Reduced motion preference */
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+        #world.anim { transition: none !important; }
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* Skip link for keyboard users */
+    .skip-link { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden; z-index: 1000; }
+    .skip-link:focus { position: fixed; top: var(--space-2); left: var(--space-2); width: auto; height: auto; padding: 8px 16px; background: var(--blue); color: #000; border-radius: var(--radius-md); font-weight: 600; text-decoration: none; z-index: 10000; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        display: grid;
+        grid-template-columns: var(--navW) 1fr var(--sideW);
+        grid-template-rows: var(--topH) 1fr var(--footH);
+        grid-template-areas: "top top top" "nav stage side" "foot foot foot";
+    }
+
+    /* ---------- background cosmos ---------- */
+    #bg { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        background:
+            radial-gradient(1200px 800px at 65% 25%, rgba(37, 99, 235, 0.12), transparent 60%),
+            radial-gradient(900px 600px at 25% 80%, rgba(139, 92, 246, 0.09), transparent 60%),
+            radial-gradient(1500px 1000px at 50% 50%, rgba(6, 10, 28, 0.55), transparent 85%),
+            linear-gradient(180deg, #01050a 0%, #02060d 45%, #01050a 100%);
+        background-size: 100% 100%;
+    }
+    #bg::after { content: ''; position: fixed; inset: 0; pointer-events: none;
+        background-image:
+            linear-gradient(rgba(56, 189, 248, 0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(56, 189, 248, 0.035) 1px, transparent 1px);
+        background-size: 40px 40px; opacity: 0.5; z-index: 1; }
+    #bg .neb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: .55; z-index: 1; }
+
+    /* ---------- top bar ---------- */
+    #topbar { grid-area: top; z-index: 60; display: flex; align-items: center; gap: 12px;
+        padding: 0 18px; background: rgba(5, 9, 22, 0.85); backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--line); }
+    .logo { display: flex; align-items: center; gap: 12px; min-width: 190px; }
+    .logo .dot { width: 34px; height: 34px; border-radius: 50%; flex: none;
+        background: radial-gradient(circle at 35% 30%, #9be4ff, #2563eb 55%, #172554);
+        box-shadow: 0 0 24px rgba(56, 189, 248, 0.7); border: 1px solid rgba(255,255,255,0.15); }
+    .logo b { font-size: 1.06rem; letter-spacing .2px; white-space: nowrap; color: #fff; }
+    .logo small { display: block; font-size: .64rem; color: #7fa8d6; font-weight: 400; margin-top: 1px; }
+    .srch { flex: 1; max-width: 720px; margin: 0 auto; position: relative; display: flex; align-items: center;
+        gap: 8px; height: 38px; padding: 0 16px 0 14px; border-radius: 999px;
+        background: rgba(11, 19, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.28); }
+    .srch:focus-within { border-color: rgba(56, 189, 248, 0.7); box-shadow: 0 0 22px rgba(37, 99, 235, .3); }
+    .srch .sicon { color: var(--blue); font-size: 1rem; }
+    .srch input { flex: 1; background: none; border: none; outline: none; color: var(--ink); font-size: .9rem; }
+    .srch input::placeholder { color: var(--dim); }
+    .topbtn { height: 36px; padding: 0 var(--space-3); border-radius: var(--radius-md);
+        border: 1px solid rgba(56, 189, 248, 0.22); color: #cfe8ff; cursor: pointer; font-size: .84rem;
+        display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+        background: rgba(11, 19, 42, 0.65); transition: all var(--trans-fast); }
+    .topbtn:hover { border-color: rgba(56, 189, 248, 0.65); color: #fff; background: rgba(37, 99, 235, .12); }
+    .topbtn:active { transform: translateY(-1px); }
+    .topbtn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+    #wsbadge { display: inline-flex; align-items: center; gap: 7px; font-size: .78rem; color: var(--green); white-space: nowrap; }
+    #wsbadge .d { width: 9px; height: 9px; border-radius: 50%; background: currentColor; box-shadow: 0 0 10px currentColor; }
+    #wsbadge.off { color: var(--red); }
+    #clock { font-variant-numeric: tabular-nums; color: #a9c2e2; font-size: .86rem; white-space: nowrap; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; flex: none; display: flex; align-items: center;
+        justify-content: center; font-size: .7rem; font-weight: 700; color: #e7f4ff; cursor: default;
+        background: radial-gradient(circle at 35% 30%, rgba(125, 211, 252, .5), rgba(37, 99, 235, .6));
+        border: 1px solid rgba(56, 189, 248, .5); box-shadow: 0 0 18px rgba(37, 99, 235, .45); }
+    #sideToggle { display: none; }
+
+    /* ---------- left nav ---------- */
+    #leftnav { grid-area: nav; z-index: 50; background: rgba(5, 9, 22, 0.82); backdrop-filter: blur(14px);
+        border-right: 1px solid var(--line); padding: 12px 8px; display: flex; flex-direction: column; gap: 3px; overflow-y: auto; }
+    .nav-it { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: var(--radius-md);
+        color: #93b7d8; cursor: pointer; font-size: .89rem; border: 1px solid transparent; user-select: none; }
+    .nav-it .ico { font-size: 1.05rem; width: 22px; text-align: center; }
+    .nav-it:hover { background: rgba(56, 189, 248, 0.1); color: #e5edf7; }
+    .nav-it.active { background: linear-gradient(90deg, rgba(37, 99, 235, 0.3), transparent);
+        color: #fff; border-color: rgba(56, 189, 248, 0.35); box-shadow: inset 0 0 12px rgba(56, 189, 248, 0.15); }
+    .nav-it.disabled { opacity: .5; cursor: not-allowed; filter: grayscale(.4); }
+    .nav-it.disabled:hover { background: transparent; color: #7a8da4; }
+    .nav-it .cnt { margin-left: auto; font-size: .7rem; color: var(--dim); background: rgba(56, 189, 248, 0.12);
+        border-radius: 8px; padding: 1px 7px; }
+    .nav-sep { margin: 12px 6px 5px; font-size: .66rem; letter-spacing: .16em; color: #4d6079; text-transform: uppercase; }
+    #navconn { margin-top: auto; padding: 10px 12px; font-size: .74rem; color: var(--muted);
+        border-top: 1px dashed rgba(148, 163, 184, 0.12); }
+    #navconn b { color: var(--green); }
+    #navconn b.bad { color: var(--red); }
+
+    /* ---------- stage ---------- */
+    #stage { grid-area: stage; position: relative; overflow: hidden;
+        background: radial-gradient(1200px 800px at 50% 42%, rgba(9, 15, 34, 0.35), transparent 75%); }
+    #viewport { position: absolute; inset: 0; cursor: grab; }
+    #viewport.drag { cursor: grabbing; }
+    #world { position: absolute; left: 50%; top: 50%; transform-origin: 0 0; }
+    /* preset jumps animate; wheel/drag never set this class */
+    #world.anim { transition: transform .45s cubic-bezier(.22, .9, .3, 1); }
+    .wstar { position: absolute; pointer-events: none; }
+    #edges { position: absolute; left: -1400px; top: -900px; width: 2800px; height: 1800px; overflow: visible; pointer-events: none; }
+    #edges path { fill: none; }
+    .spoke { stroke: rgba(56, 189, 248, 0.28); stroke-width: 1.1; stroke-dasharray: none; }
+    .rel-edge { stroke: rgba(167, 139, 250, 0.4); stroke-width: 1.2; filter: drop-shadow(0 0 3px rgba(167, 139, 250, 0.3)); }
+    .rel-edge.dim { stroke: rgba(148, 163, 184, 0.22); }
+    .rel-edge.active { stroke: rgba(167, 139, 250, 0.85); stroke-width: 2; animation: edgepulse 2s ease-in-out infinite; }
+    .fedge { stroke: rgba(56, 189, 248, 0.45); stroke-width: 1.3; filter: drop-shadow(0 0 3px rgba(56, 189, 248, 0.3)); }
+    @keyframes edgepulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .edge-label { fill: #8fa8cc; font-size: 9px; paint-order: stroke; stroke: rgba(4, 7, 15, .85); stroke-width: 3px; }
+
+    /* center core node */
+    .core-node { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%);
+        display: flex; flex-direction: column; align-items: center; cursor: pointer; z-index: 6; }
+    .core-orb { width: 156px; height: 156px; border-radius: 50%; position: relative;
+        display: flex; align-items: center; justify-content: center; font-size: 46px;
+        background: radial-gradient(circle at 35% 30%, #bdf8ff 0%, #3b82f6 35%, #1d4ed8 60%, #0a1a4a 100%);
+        box-shadow: 0 0 60px rgba(59, 130, 246, .65), 0 0 150px rgba(37, 99, 235, .35), inset 0 0 38px rgba(191, 229, 255, .5);
+        border: 1px solid rgba(56, 189, 248, 0.5); }
+    .core-orb::after { content: ''; position: absolute; inset: -20px; border-radius: 50%;
+        border: 1px solid rgba(56, 189, 248, 0.45); animation: pulse 3.6s ease-out infinite; }
+    @keyframes pulse { 0% { transform: scale(.95); opacity: .9; } 75% { transform: scale(1.1); opacity: .05; } 100% { opacity: 0; } }
+    /* orbit rings with orbiting markers */
+    .core-orb .orbit { position: absolute; inset: -34px; border-radius: 50%; pointer-events: none;
+        border: 1px dashed rgba(56, 189, 248, .35); animation: spin 28s linear infinite; }
+    .core-orb .orbit.o2 { inset: -64px; border-color: rgba(167, 139, 250, .25);
+        animation-duration: 44s; animation-direction: reverse; }
+    .core-orb .orbit.i3 { inset: -82px; border-color: rgba(34, 211, 238, .18);
+        animation-duration: 56s; animation-direction: normal; }
+    .core-orb .orbit i { position: absolute; top: -3px; left: 50%; width: 7px; height: 7px; border-radius: 50%;
+        background: #7dd3fc; box-shadow: 0 0 14px #38bdf8; }
+    .core-orb .orbit.o2 i { background: #c4b5fd; box-shadow: 0 0 14px #a78bfa; }
+    .core-orb .orbit.i3 i { background: #22d3ee; box-shadow: 0 0 14px #22d3ee; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .core-name { margin-top: 12px; font-size: 1.1rem; font-weight: 700; color: #fff; text-shadow: 0 2px 16px rgba(37, 99, 235, 1); white-space: nowrap; }
+    .core-sub { font-size: .74rem; color: var(--muted); letter-spacing .02em; }
+
+    /* clusters */
+    .cluster { position: absolute; transform: translate(-50%, -50%); width: 210px;
+        display: flex; flex-direction: column; align-items: center; cursor: pointer; z-index: 5; --c: var(--blue); }
+    .cluster .c-island { position: absolute; top: 30px; left: -62px; right: -62px; height: 96px; border-radius: 50%;
+        background: radial-gradient(ellipse at center, color-mix(in srgb, var(--c) 30%, transparent), transparent 72%);
+        filter: blur(20px); z-index: -1; pointer-events: none; }
+    .c-orb { width: 66px; height: 66px; border-radius: 50%; position: relative; z-index: 2;
+        display: flex; align-items: center; justify-content: center; font-size: 26px;
+        background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .22), rgba(11, 18, 40, .9) 65%);
+        border: 1px solid color-mix(in srgb, var(--c) 70%, transparent);
+        box-shadow: 0 0 28px color-mix(in srgb, var(--c) 50%, transparent), inset 0 0 16px color-mix(in srgb, var(--c) 28%, transparent); }
+    .c-name { margin-top: 9px; font-size: .94rem; font-weight: 650; color: #fff; text-shadow: 0 2px 12px rgba(3, 8, 20, .95); }
+    .c-sub { font-size: .7rem; color: var(--muted); text-align: center; }
+    .c-chips { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 8px; max-width: 218px; }
+    .mchip { font-size: .64rem; padding: 3px 10px; border-radius: 999px; background: rgba(11, 18, 40, .82);
+        border: 1px solid rgba(148, 163, 184, 0.28); color: #c6d6ef; cursor: pointer; white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis; max-width: 210px; }
+    .mchip:hover { border-color: color-mix(in srgb, var(--c) 75%, transparent); color: #fff; }
+    .mchip .k { color: var(--c); font-weight: 700; }
+    .cluster:hover .c-orb { transform: scale(1.12); transition: .22s; }
+    /* cluster item list */
+    .c-list { display: flex; flex-direction: column; gap: 2px; margin-top: 9px; width: 100%; max-width: 232px; }
+    .c-row { display: flex; gap: 8px; align-items: center; padding: 4px 9px; border-radius: 9px;
+        font-size: .72rem; color: #c6d6ef; cursor: default; min-width: 0; }
+    .c-row[onclick] { cursor: pointer; }
+    .c-row:hover { background: rgba(56, 189, 248, .11); }
+    .c-row .ci { width: 16px; text-align: center; flex: none; }
+    .c-row .cn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .c-row .cv { color: var(--muted); font-size: .66rem; font-variant-numeric: tabular-nums; flex: none; }
+    /* floating status bubbles (reference: «Browser Agent — Reading article…») */
+    .bubble { position: absolute; transform: translate(-50%, -50%); display: flex; gap: 9px; align-items: center;
+        padding: 9px 13px; border-radius: 14px; max-width: 280px; z-index: 3;
+        background: rgba(9, 15, 32, .88); border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
+        box-shadow: 0 0 26px rgba(37, 99, 235, .28), inset 0 0 14px rgba(255,255,255,0.05); backdrop-filter: blur(6px); }
+    .bubble .bi { font-size: 1.05rem; flex: none; }
+    .bubble .bt { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+    .bubble .bt b { font-size: .72rem; color: #eef5ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bubble .bt small { font-size: .64rem; color: var(--c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* mini object nodes */
+    .mininode { position: absolute; transform: translate(-50%, -50%); width: 132px;
+        display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; z-index: 4; --c: var(--blue); }
+    .mn-orb { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-size: 16px; background: rgba(12, 19, 40, .94); border: 1px solid color-mix(in srgb, var(--c) 65%, transparent);
+        box-shadow: 0 0 16px color-mix(in srgb, var(--c) 35%, transparent); }
+    .mininode:hover .mn-orb { border-color: color-mix(in srgb, var(--c) 90%, transparent); box-shadow: 0 0 20px color-mix(in srgb, var(--c) 65%, transparent); transform: scale(1.05); }
+    .mn-name { font-size: .64rem; color: #c6d6ef; text-align: center; line-height: 1.2; max-width: 128px;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+
+    /* graph / focus nodes */
+    .gnode { position: absolute; transform: translate(-50%, -50%); width: 126px;
+        display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; z-index: 4; --c: var(--blue); }
+    .gn-orb { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-size: 20px; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.16), rgba(11,18,40,.92) 68%);
+        border: 1px solid color-mix(in srgb, var(--c) 65%, transparent);
+        box-shadow: 0 0 20px color-mix(in srgb, var(--c) 45%, transparent); }
+    .gnode:hover .gn-orb { transform: scale(1.12); box-shadow: 0 0 24px color-mix(in srgb, var(--c) 60%, transparent); }
+    .gnode:focus { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: var(--radius-md); }
+    .gn-name { font-size: .66rem; color: #d7e4f4; text-align: center; max-width: 124px; line-height: 1.2;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+    .gn-cnt { font-size: .6rem; color: var(--dim); }
+    .gn-rel { font-size: .58rem; color: var(--dim); max-width: 124px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gn-orb.center { width: 70px; height: 70px; font-size: 28px; box-shadow: 0 0 38px color-mix(in srgb, var(--c) 65%, transparent); }
+
+    /* focus card */
+    .focus-card { position: absolute; transform: translate(-50%, -50%); width: 300px; border-radius: var(--radius-xl);
+        background: rgba(9, 15, 32, 0.92); border: 1px solid rgba(56, 189, 248, 0.5); padding: 18px;
+        backdrop-filter: blur(10px); box-shadow: var(--shadow-xl); z-index: 7; }
+    .focus-card h3 { font-size: var(--text-lg); color: #f4f9ff; margin-bottom: 6px; word-break: break-word; letter-spacing: .01em; font-weight: 700; }
+    .focus-card .fsub { font-size: .72rem; color: #a5b8d4; margin-bottom: 14px; letter-spacing: .01em; line-height: 1.4; }
+    .focus-card .row { display: flex; justify-content: space-between; gap: 10px; font-size: .76rem;
+        padding: 6px 0; border-top: 1px dashed rgba(148, 163, 184, 0.08); }
+    .focus-card .row b { color: var(--muted); font-weight: 600; flex: none; }
+    .focus-card .row span { color: var(--ink-dim); word-break: break-word; min-width: 0; }
+    .focus-card .row:not(:last-child) { margin-bottom: 8px; padding-bottom: 6px; }
+    /* Detail is a semantic representation, not a magnification of the full card.
+       The complete object remains in the adjacent Core-backed sidebar. */
+    #world.focus-detail .focus-card { width: 180px; padding: 9px; }
+    #world.focus-detail .focus-card h3 { font-size: 8px; line-height: 1.25; margin-bottom: 3px; }
+    #world.focus-detail .focus-card .fsub { font-size: 5px; margin-bottom: 4px; }
+    #world.focus-detail .focus-card .fsection { margin-top: 4px; padding-top: 3px; }
+    #world.focus-detail .focus-card .fsec-title { font-size: 4px; margin-bottom: 2px; }
+    #world.focus-detail .focus-card .row { font-size: 4px; padding: 1px 0; gap: 3px; }
+    #world.focus-detail .focus-card .row:not(:last-child) { margin-bottom: 2px; padding-bottom: 2px; }
+    #world.focus-detail .focus-card .chip { font-size: 4px; padding: 2px 3px; }
+    #world.focus-detail .focus-card .perm { font-size: 4px; padding: 2px 0; }
+    #world.focus-detail .focus-card .ftools span { font-size: 4px; padding: 2px 3px; }
+    #world.focus-detail .focus-card .fpermissions { display: none; }
+
+    /* tree view */
+    .tree-wrap { position: absolute; left: 0; top: 0; width: 1760px; transform: translateX(-50%);
+        display: flex; flex-direction: column; align-items: center; gap: 32px; z-index: 2; }
+    .troot { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; }
+    .troot .t-orb { width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-size: 24px; background: radial-gradient(circle at 35% 30%, #93c5fd 15%, #1d4ed8 55%, #0a3b8a 100%);
+        box-shadow: 0 0 30px rgba(59, 130, 246, 0.55); }
+    .troot span { font-size: var(--text-lg); font-weight: 700; color: var(--ink); }
+    .trow { display: flex; gap: 52px; justify-content: center; align-items: flex-start; position: relative; }
+    /* horizontal branch bar + root trunk (reference: elbow tree connectors) */
+    .trow::before { content: ''; position: absolute; top: 0; left: 80px; right: 80px; height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.45) 10%, rgba(56, 189, 248, 0.45) 90%, transparent); }
+    .troot { position: relative; }
+    .troot::after { content: ''; position: absolute; bottom: -34px; left: 50%; width: 1px; height: 34px;
+        background: linear-gradient(rgba(56, 189, 248, 0.6), rgba(56, 189, 248, 0.12)); }
+    .tcol { position: relative; padding-top: 34px; cursor: pointer; }
+    .tcol::before { content: ''; position: absolute; top: 0; left: 50%; width: 1px; height: 34px;
+        background: linear-gradient(rgba(56, 189, 248, 0.55), rgba(56, 189, 248, 0.1)); }
+    .thead { display: flex; gap: 9px; align-items: center; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
+        background: rgba(13, 20, 40, 0.88); border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
+        font-size: 0.86rem; font-weight: 700; white-space: nowrap; --c: var(--blue); }
+    .thead small { color: var(--muted); font-weight: 400; margin-left: 4px; font-size: 0.7rem; }
+    .thead:focus { outline: 2px solid var(--blue); outline-offset: 2px; }
+    .tlist { margin-top: var(--space-2); padding-left: 10px; border-left: 1px solid rgba(56, 189, 248, 0.22);
+        margin-left: 24px; display: flex; flex-direction: column; gap: 3px; }
+    .titem { display: flex; gap: 8px; align-items: center; padding: var(--space-1) var(--space-2); font-size: var(--text-xs);
+        color: #b9c9e4; border-radius: var(--radius-md); cursor: pointer; white-space: nowrap; }
+    .titem:hover { background: rgba(56, 189, 248, 0.12); color: #fff; }
+    .titem:focus { outline: 2px solid var(--blue); outline-offset: 2px; }
+    .titem .dots { color: #475569; }
+
+    /* mode / zoom controls */
+    #modebar { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px;
+        padding: 6px 12px; border-radius: 999px; background: rgba(10, 16, 34, 0.82); border: 1px solid var(--line-strong);
+        backdrop-filter: blur(12px); z-index: 35; }
+    .modebtn { padding: 7px 16px; border-radius: 999px; background: transparent; border: none;
+        color: #9db6d8; cursor: pointer; font-size: 0.86rem; display: inline-flex; gap: 8px; align-items: center; }
+    .modebtn:hover { color: #e5edf7; }
+    .modebtn.active { background: linear-gradient(135deg, var(--blue-deep), var(--blue)); color: #fff;
+        box-shadow: 0 0 18px rgba(56, 189, 248, 0.5); }
+    #zoomctl { position: absolute; left: 16px; bottom: 14px; z-index: 35; display: flex; align-items: center; gap: 7px;
+        padding: 7px 12px; border-radius: 14px; background: rgba(10, 16, 34, 0.82); border: 1px solid var(--line-strong); backdrop-filter: blur(10px); }
+    .zbtn { width: 28px; height: 28px; border-radius: 9px; background: rgba(37, 99, 235, 0.18);
+        border: 1px solid rgba(56, 189, 248, 0.3); color: #dff1ff; cursor: pointer; font-size: 1rem; line-height: 1; }
+    .zbtn:hover { border-color: rgba(56, 189, 248, 0.7); }
+    #zlabel { min-width: 100px; text-align: center; font-variant-numeric: tabular-nums; color: #cfe8ff; font-size: 0.8rem; }
+    .zpre { padding: 5px 10px; border-radius: 8px; background: transparent; border: 1px solid rgba(148, 163, 184, 0.25);
+        color: #9db6d8; cursor: pointer; font-size: 0.72rem; }
+    .zpre:hover, .zpre.active { border-color: rgba(56, 189, 248, 0.6); color: #fff; background: rgba(37, 99, 235, 0.16); }
+    #stickyhint { position: absolute; right: 18px; bottom: 14px; z-index: 30; font-size: 0.7rem; color: var(--dim); }
+    /* graph relation legend (real relation types, colored edges) */
+    #glegend { position: absolute; left: 16px; bottom: 66px; z-index: 30; display: none; flex-wrap: wrap;
+        gap: 6px; max-width: 580px; }
+    #glegend .lg { display: inline-flex; gap: 7px; align-items: center; padding: 5px 10px; border-radius: 999px;
+        background: var(--glass); border: 1px solid var(--line); font-size: 0.68rem; color: #c6d6ef; }
+    #glegend .lg i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    #glegend .lg b { color: var(--muted); font-weight: 600; }
+
+    /* ---------- sidebar ---------- */
+    #sidebar { grid-area: side; z-index: 35; background: rgba(6, 10, 24, 0.82); backdrop-filter: blur(12px);
+        border-left: 1px solid var(--line); padding: 14px; overflow-y: auto; }
+    .crumbs { display: flex; align-items: center; gap: 5px; color: var(--dim); font-size: .74rem; margin-bottom: 10px; flex-wrap: wrap; }
+    .crumbs b { color: #cfe8ff; font-weight: 600; }
+    .crumbs .sep { color: #475569; }
+    .obj-card { border-radius: var(--radius-lg); border: 1px solid rgba(56, 189, 248, 0.28); padding: 16px;
+        background: linear-gradient(160deg, rgba(37, 99, 235, 0.14), rgba(139, 92, 246, 0.06)); }
+    .cover { height: 110px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;
+        font-size: 46px; margin-bottom: 12px; position: relative; overflow: hidden; background:
+        radial-gradient(340px 150px at 30% 0%, rgba(56, 189, 248, 0.28), transparent 72%),
+        linear-gradient(160deg, #091430, #0e1c40); border: 1px solid rgba(56, 189, 248, 0.22); }
+    .cover::before { content: ''; position: absolute; inset: 0;
+        background: repeating-linear-gradient(0deg, rgba(56, 189, 248, 0.06) 0 1px, transparent 1px 22px),
+                    repeating-linear-gradient(90deg, rgba(56, 189, 248, 0.06) 0 1px, transparent 1px 22px); }
+    .cover .cic { position: relative; z-index: 1; filter: drop-shadow(0 0 22px rgba(56, 189, 248, 0.6)); }
+    .obj-card h2 { font-size: 1.02rem; color: #fff; word-break: break-word; }
+    .obj-card .sub { font-size: .74rem; color: #9fb3cf; margin-top: 4px; }
+    .obadge { display: inline-flex; gap: 6px; align-items: center; margin-top: 10px; padding: 4px 11px;
+        border-radius: var(--radius-full); font-size: .68rem; background: rgba(52, 211, 153, 0.13); color: var(--green);
+        border: 1px solid rgba(52, 211, 153, 0.35); }
+    .sec-title { margin: 14px 0 8px; font-size: .72rem; letter-spacing: .12em; color: var(--dim);
+        text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+    .sec-title .r { color: #9db6d8; letter-spacing: 0; text-transform: none; }
+    .meta-row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 2px;
+        border-bottom: 1px dashed rgba(148, 163, 184, 0.12); font-size: .8rem; }
+    .meta-row b { color: var(--muted); font-weight: 600; flex: none; }
+    .meta-row span { text-align: right; color: var(--ink); word-break: break-all; min-width: 0; }
+    .rel-item { display: flex; gap: 9px; align-items: center; padding: 7px 10px; border-radius: 10px;
+        cursor: pointer; font-size: .78rem; }
+    .rel-item:hover { background: rgba(56, 189, 248, 0.1); }
+    .rel-item .t { color: var(--dim); margin-left: auto; font-size: .7rem; }
+    .act-btn { width: 100%; margin: 5px 0; padding: 10px 14px; border-radius: var(--radius-md);
+        background: rgba(37, 99, 235, 0.16); border: 1px solid rgba(56, 189, 248, 0.3); color: #e4f2ff;
+        cursor: pointer; font-size: .84rem; text-align: left; }
+    .act-btn:hover { border-color: rgba(56, 189, 248, 0.7); background: rgba(37, 99, 235, 0.28); }
+    .perm { display: flex; gap: 9px; font-size: .76rem; color: #b9c9e4; padding: 6px 0; }
+    .perm .ic { color: var(--amber); }
+    .tools { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
+    .tool { display: flex; flex-direction: column; gap: 4px; align-items: center; padding: 10px 3px;
+        border-radius: 13px; background: rgba(11, 19, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.18);
+        color: #a9c2e2; font-size: .66rem; cursor: pointer; }
+    .tool:hover { border-color: rgba(56, 189, 248, 0.55); color: #fff; }
+    .tool .ic { font-size: 1rem; }
+
+    /* ---------- footer ---------- */
+    #bottombar { grid-area: foot; z-index: 60; display: flex; align-items: center; gap: 18px;
+        padding: 0 18px; background: rgba(5, 9, 22, 0.88); backdrop-filter: blur(16px);
+        border-top: 1px solid var(--line); font-size: .78rem; overflow: hidden; }
+    .foot-sec { display: flex; align-items: center; gap: 10px; color: var(--muted); min-width: 0; flex: none; }
+    .foot-sec b { color: var(--ink); font-weight: 600; white-space: nowrap; }
+    /* stacked label/value statuses (reference: «Network / Connected») */
+    .fstat { display: flex; gap: 10px; align-items: center; }
+    .fstat .fi { font-size: 1.1rem; }
+    .fstat .ftx { display: flex; flex-direction: column; line-height: 1.18; gap: 1px; }
+    .fstat small { font-size: .58rem; color: var(--dim); letter-spacing: .06em; text-transform: uppercase; }
+    .fstat b { font-size: .8rem; }
+    .ticker { overflow: hidden; white-space: nowrap; max-width: 320px;
+        mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+    .ticker span { color: #a9c2e2; }
+    .chip { padding: 5px 11px; border-radius: var(--radius-full); background: rgba(11, 19, 42, 0.72);
+        border: 1px solid rgba(56, 189, 248, 0.18); color: #cfe8ff; cursor: pointer; font-size: .72rem;
+        display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; flex: none; }
+    .chip:hover { border-color: rgba(56, 189, 248, 0.55); }
+    .qa { color: #9db6d8; margin-right: 4px; }
+    .ok { color: var(--green); } .bad { color: var(--red); } .warn { color: var(--amber); }
+
+    /* ---------- toasts ---------- */
+    #toasts { position: fixed; right: calc(var(--sideW) + 16px); bottom: calc(var(--footH) + 12px);
+        z-index: 90; display: flex; flex-direction: column; gap: 8px; }
+    .toast { padding: 10px 14px; border-radius: var(--radius-md); background: rgba(8, 13, 28, .95);
+        border: 1px solid rgba(56, 189, 248, .4); color: #dff1ff; font-size: .8rem;
+        box-shadow: var(--shadow-lg); max-width: 380px; animation: tin .22s ease; }
+    .toast.err { border-color: rgba(248, 113, 113, .55); }
+    @keyframes tin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    /* ---------- search dropdown ---------- */
+    #sdrop { position: absolute; top: 46px; left: 50%; transform: translateX(-50%); width: min(600px, 82vw);
+        max-height: 400px; overflow-y: auto; border-radius: var(--radius-lg); background: rgba(8, 13, 28, .97);
+        border: 1px solid rgba(56, 189, 248, .32); z-index: 70; display: none; }
+    .sd-it { padding: 9px 13px; display: flex; gap: 9px; align-items: center; font-size: .82rem;
+        cursor: pointer; border-bottom: 1px solid rgba(148, 163, 184, .07); }
+    .sd-it:hover { background: rgba(56, 189, 248, .1); }
+    .sd-it .t { color: var(--dim); margin-left: auto; font-size: .66rem; }
+
+    /* ---------- modals ---------- */
+    .modal { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center;
+        background: rgba(2, 6, 16, 0.78); backdrop-filter: blur(8px); }
+    .modal.open { display: flex; }
+    .mpanel { width: min(720px, 92vw); max-height: 90vh; overflow-y: auto; border-radius: var(--radius-xl);
+        background: #070d1d; border: 1px solid rgba(56, 189, 248, 0.42); padding: 24px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3); }
+    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .mhead h2 { font-size: 1.06rem; }
+    .mclose { width: 32px; height: 32px; border-radius: var(--radius-md);
+        background: rgba(15, 23, 42, 0.72); border: 1px solid rgba(148, 163, 184, 0.3); color: #cfe8ff; cursor: pointer; }
+    .mclose:hover { border-color: var(--blue); color: #fff; }
+
+    /* architecture panel */
+    .layer { display: grid; grid-template-columns: 224px 1fr; gap: 16px; border-radius: 18px;
+        padding: 16px; margin-bottom: 14px; border: 1px solid; }
+    .layer.l1 { border-color: rgba(56, 189, 248, 0.42); background: linear-gradient(90deg, rgba(37, 99, 235, 0.1), transparent); }
+    .layer.l2 { border-color: rgba(52, 211, 153, 0.42); background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), transparent); }
+    .layer.l3 { border-color: rgba(167, 139, 250, 0.48); background: linear-gradient(90deg, rgba(139, 92, 246, 0.1), transparent); }
+    .layer.l4 { border-color: rgba(245, 158, 11, 0.44); background: linear-gradient(90deg, rgba(245, 158, 11, 0.09), transparent); }
+    .lay-head { display: flex; gap: 12px; align-items: flex-start; }
+    .lay-num { flex: none; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
+        justify-content: center; font-size: 0.82rem; font-weight: 700; }
+    .l1 .lay-num { background: #2563eb; } .l2 .lay-num { background: #10b981; }
+    .l3 .lay-num { background: #8b5cf6; } .l4 .lay-num { background: #f59e0b; }
+    .lay-title { font-weight: 700; font-size: 0.96rem; }
+    .lay-sub { font-size: 0.7rem; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+    .lay-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; min-width: 0; }
+    .lcard { border: 1px solid; border-radius: 14px; padding: 12px; font-size: 0.76rem;
+        background: rgba(10, 16, 34, 0.65); min-width: 0; }
+    .l1 .lcard { border-color: rgba(56, 189, 248, 0.3); } .l2 .lcard { border-color: rgba(52, 211, 153, 0.3); }
+    .l3 .lcard { border-color: rgba(167, 139, 250, 0.3); } .l4 .lcard { border-color: rgba(245, 158, 11, 0.3); }
+    .lcard b { display: flex; gap: 7px; align-items: center; color: #eef5ff; margin-bottom: 5px; font-size: 0.84rem; }
+    .lcard span { color: #9db6d8; font-size: 0.74rem; display: block; line-height: 1.45; overflow-wrap: anywhere; }
+    .flowline { display: flex; align-items: center; gap: 10px; padding: 14px 16px; flex-wrap: wrap;
+        border: 1px solid rgba(56, 189, 248, 0.24); border-radius: 16px; background: rgba(10, 16, 34, 0.62); }
+    .fchip { padding: 7px 14px; border-radius: 999px; background: rgba(37, 99, 235, 0.14);
+        border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.78rem; color: #dff1ff; white-space: nowrap; }
+    .fchip small { color: var(--muted); margin-left: 6px; }
+    .farrow { color: #475569; }
+    .focus-card .fheader { border-bottom: 1px solid rgba(56,189,248,.15); padding-bottom: 6px; margin-bottom: 6px; }
+    .focus-card .fsection { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(56,189,248,.12); }
+    .focus-card .fsec-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--blue); margin-bottom: 4px; }
+    .focus-card .ftools { display: flex; gap: 6px; flex-wrap: wrap; }
+    .focus-card .ftools span { padding: 3px 8px; border-radius: 6px; background: rgba(37,99,235,.12); border: 1px solid rgba(56,189,248,.22); font-size: .74rem; cursor: pointer; color: #cfe8ff; }
+    .rel-tag { font-size: .62rem; color: var(--blue); opacity: .85; white-space: nowrap; }
+    .chip .rel-tag { margin-left: 2px; }
+    .arch-note { margin-top: 14px; font-size: 0.7rem; color: var(--dim); line-height: 1.6; }
+
+    /* reader modal */
+    #reader .mpanel { width: min(780px, 92vw); }
+    #readerpre { font-size: 0.78rem; white-space: pre-wrap; color: #cfe8ff; max-height: 60vh; overflow: auto;
+        padding: 14px; border-radius: 12px; background: rgba(4, 8, 18, 0.85); border: 1px solid rgba(148, 163, 184, 0.14); }
+
+    /* create file modal — the directory list is sourced from provider roots/Core objects */
+    #filecreate .mpanel { width: min(720px, 92vw); }
+    .filecreate-grid { display: grid; gap: 12px; }
+    .filecreate-label { display: block; color: var(--muted); font-size: .72rem; margin-bottom: 5px; }
+    .filecreate-input { width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: 9px;
+        color: var(--ink); background: rgba(15, 23, 42, .68); border: 1px solid rgba(56, 189, 248, .24); outline: none; }
+    .filecreate-input:focus { border-color: rgba(56, 189, 248, .65); }
+    textarea.filecreate-input { min-height: 180px; resize: vertical; font-family: ui-monospace, Consolas, monospace; line-height: 1.45; }
+    .filecreate-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+    #filecreate-status { color: var(--muted); font-size: .75rem; overflow-wrap: anywhere; }
+    #filecreate-status.ok { color: var(--green); }
+    #filecreate-status.err { color: var(--red); }
+
+    /* embedded browser panel (real CDP frames of real tabs) */
+    #browser .mpanel { width: min(1320px, 96vw); height: 88vh; display: flex; flex-direction: column; padding: 16px 18px; overflow: hidden; }
+    .bhint { font-size: .68rem; color: var(--muted); font-weight: 400; margin-left: 8px; }
+    .btabs { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; max-height: 80px; overflow-y: auto; flex: none; }
+    .btab { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px 6px 12px; border-radius: 11px 11px 0 0;
+        background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(56, 189, 248, 0.2); border-bottom: none;
+        color: #9db6d8; font-size: .74rem; cursor: pointer; max-width: 260px; }
+    .btab.active { color: #fff; border-color: rgba(56, 189, 248, 0.6); background: rgba(37, 99, 235, 0.18); }
+    .btab .tt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .btab .x { opacity: 0.55; padding: 0 2px; border-radius: 5px; }
+    .btab .x:hover { opacity: 1; color: var(--red); }
+    .btab.none { border-radius: 10px; border-bottom: 1px solid rgba(56, 189, 248, 0.18); cursor: default; }
+    .bbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex: none; }
+    .binput { flex: 1; height: 36px; padding: 0 13px; border-radius: 10px; outline: none; color: var(--ink);
+        background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.2); font-size: 0.84rem; }
+    .binput:focus { border-color: rgba(56, 189, 248, 0.6); }
+    .bframe-wrap { flex: 1; min-height: 0; border-radius: 14px; overflow: hidden; border: 1px solid rgba(56, 189, 248, 0.28);
+        background: #05070d; display: flex; align-items: center; justify-content: center; }
+    .bframe { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+    .bframe-empty { color: var(--dim); font-size: 0.84rem; padding: 24px; text-align: center; }
+    .bstatus { margin-top: 8px; font-size: 0.74rem; color: var(--muted); min-height: 16px; flex: none; }
+    .bnote { margin-top: 8px; font-size: 0.68rem; color: var(--dim); line-height: 1.5; flex: none; }
+    .bnote .mono { font-family: Consolas, monospace; color: #9db6d8; }
+
+    /* OpenCode Agent Gateway panel */
+    #agentpanel .mpanel { width: min(880px, 94vw); }
+    .agent-grid { display: grid; grid-template-columns: minmax(220px, 310px) 1fr; gap: 14px; }
+    .agent-box { border: 1px solid rgba(52, 211, 153, .22); background: rgba(5, 11, 24, .72); border-radius: 14px; padding: 13px; }
+    .agent-label { color: var(--muted); font-size: .72rem; margin: 0 0 7px; }
+    .agent-select, .agent-input { width: 100%; color: var(--text); background: #070d1c; border: 1px solid rgba(148, 163, 184, .3); border-radius: 9px; padding: 10px; font: inherit; box-sizing: border-box; }
+    .agent-input { min-height: 100px; resize: vertical; line-height: 1.45; }
+    .agent-actions { display: flex; align-items: center; gap: 9px; margin-top: 10px; }
+    .agent-state { font-size: .76rem; color: var(--muted); }
+    .agent-state.running { color: var(--amber); }
+    .agent-state.completed { color: var(--green); }
+    .agent-state.error { color: var(--red); }
+    .agent-answer { white-space: pre-wrap; min-height: 178px; max-height: 46vh; overflow: auto; line-height: 1.55; color: #d9e7fb; font: .84rem/1.55 Consolas, monospace; }
+    .agent-note { margin-top: 12px; color: var(--dim); font-size: .69rem; line-height: 1.45; }
+    @media (max-width: 760px) { .agent-grid { grid-template-columns: 1fr; } }
+
+    /* Semantic Object Editor modal */
+    #semobjcreate .mpanel { width: min(720px, 92vw); }
+    .semobj-grid { display: grid; gap: 12px; }
+    .semobj-label { display: block; color: var(--muted); font-size: .72rem; margin-bottom: 5px; }
+    .semobj-input { width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: var(--radius-md);
+        color: var(--ink); background: rgba(15, 23, 42, .68); border: 1px solid rgba(56, 189, 248, .24); outline: none; }
+    .semobj-input:focus { border-color: rgba(56, 189, 248, .65); box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
+    textarea.semobj-input { min-height: 180px; resize: vertical; font-family: ui-monospace, Consolas, monospace; line-height: 1.45; }
+    .semobj-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+    #semobjcreate-status { color: var(--muted); font-size: .75rem; overflow-wrap: anywhere; }
+    #semobjcreate-status.ok { color: var(--green); }
+    #semobjcreate-status.err { color: var(--red); }
+
+    /* Semantic Object Editor (patch) modal */
+    #semobjedit .mpanel { width: min(720px, 92vw); }
+    .semobjedit-grid { display: grid; gap: 12px; }
+    .semobjedit-label { display: block; color: var(--muted); font-size: .72rem; margin-bottom: 5px; }
+    .semobjedit-input { width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: var(--radius-md);
+        color: var(--ink); background: rgba(15, 23, 42, .68); border: 1px solid rgba(56, 189, 248, .24); outline: none; }
+    .semobjedit-input:focus { border-color: rgba(56, 189, 248, .65); box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
+    textarea.semobjedit-input { min-height: 180px; resize: vertical; font-family: ui-monospace, Consolas, monospace; line-height: 1.45; }
+    .semobjedit-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+    #semobjedit-status { color: var(--muted); font-size: .75rem; overflow-wrap: anywhere; }
+    #semobjedit-status.ok { color: var(--green); }
+    #semobjedit-status.err { color: var(--red); }
+
+    /* Semantic Relation Editor modal */
+    #semrelcreate .mpanel { width: min(720px, 92vw); }
+    .semrel-grid { display: grid; gap: 12px; }
+    .semrel-label { display: block; color: var(--muted); font-size: .72rem; margin-bottom: 5px; }
+    .semrel-select { width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: var(--radius-md);
+        color: var(--ink); background: rgba(15, 23, 42, .68); border: 1px solid rgba(56, 189, 248, .24); outline: none; font: inherit; }
+    .semrel-select:focus { border-color: rgba(56, 189, 248, .65); box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
+    .semrel-input { width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: var(--radius-md);
+        color: var(--ink); background: rgba(15, 23, 42, .68); border: 1px solid rgba(56, 189, 248, .24); outline: none; }
+    .semrel-input:focus { border-color: rgba(56, 189, 248, .65); box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
+    .semrel-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+    #semrelcreate-status { color: var(--muted); font-size: .75rem; overflow-wrap: anywhere; }
+    #semrelcreate-status.ok { color: var(--green); }
+    #semrelcreate-status.err { color: var(--red); }
+
+    /* responsive */
+    @media (max-width: 1360px) {
+        body { grid-template-columns: 190px 1fr 0; --navW: 190px; }
+        #sidebar { position: fixed; right: 0; top: var(--topH); bottom: var(--footH); width: var(--sideW);
+            transform: translateX(100%); transition: transform .25s ease; z-index: 60; }
+        #sidebar.open { transform: none; box-shadow: -20px 0 60px rgba(2, 8, 20, .6); }
+        #sideToggle { display: inline-flex; }
+    }
+    @media (max-width: 1040px) {
+        body { grid-template-columns: 64px 1fr 0; --navW: 64px; }
+        .nav-it .lbl, .nav-it .cnt, .nav-sep, #navconn { display: none; }
+        .nav-it { justify-content: center; padding: 10px; }
+    }
+</style>
+</head>
+<body>
+    <a href="#world" class="skip-link">Skip to world canvas</a>
+
+    <div id="bg"></div>
+
+    <!-- top bar -->
+    <header id="topbar">
+        <div class="logo">
+            <div class="dot"></div>
+            <div><b>SpaceOS</b><small>Spatial operating environment</small></div>
+        </div>
+        <div class="srch">
+            <span class="sicon">✦</span>
+            <input id="q" autocomplete="off" placeholder="Ask, search, or give a task…">
+        </div>
+        <div id="sdrop"></div>
+        <span id="clock">--:--:--</span>
+        <div class="avatar" title="Interface action source: server actor space-bridge">SB</div>
+        <span id="wsbadge" class="off"><span class="d"></span><span id="wstxt">Connection…</span></span>
+        <button class="topbtn" id="sideToggle" onclick="toggleSidebar()">▤ Object</button>
+        <button class="topbtn" onclick="openArch()">▦ Architecture</button>
+        <button class="topbtn" onclick="openSemObjCreate()" title="Create a new semantic object in the configured world">＋ Semantic Object</button>
+        <button class="topbtn" onclick="window.open('/index.html', '_blank')" title="Open main Shell">⌂ Shell</button>
+    </header>
+
+    <!-- left nav -->
+    <nav id="leftnav">
+        <div class="nav-sep">Space</div>
+        <div class="nav-it active" data-nav="world" onclick="navGo('world')"><span class="ico">🌐</span><span class="lbl">Workspace / Computer</span></div>
+        <div class="nav-it" data-nav="files" onclick="navGo('files')"><span class="ico">📁</span><span class="lbl">Files</span><span class="cnt" id="cnt-files"></span></div>
+        <div class="nav-it" data-nav="web" onclick="navGo('web')"><span class="ico">🪐</span><span class="lbl">Web</span><span class="cnt" id="cnt-web"></span></div>
+        <div class="nav-it" onclick="openBrowser()" title="Embedded browser: real tabs and CDP frames"><span class="ico">🌐</span><span class="lbl">Workflows (Browser)</span></div>
+        <div class="nav-it" data-nav="missions" onclick="navGo('missions')"><span class="ico">🎯</span><span class="lbl">Mission</span><span class="cnt" id="cnt-missions"></span></div>
+        <div class="nav-it" data-nav="agents" onclick="navGo('agents')"><span class="ico">🤖</span><span class="lbl">Agents</span><span class="cnt" id="cnt-agents"></span></div>
+        <div class="nav-it" onclick="openAgentPanel()" title="Control an existing OpenCode session through Agent Gateway"><span class="ico">⌁</span><span class="lbl">OpenCode</span></div>
+        <div class="nav-it" data-nav="projects" onclick="navGo('projects')"><span class="ico">🗂</span><span class="lbl">Projects / Knowledge</span><span class="cnt" id="cnt-projects"></span></div>
+        <div class="nav-it" onclick="openSemObjCreate()" title="Create a new semantic object in the configured world"><span class="ico">＋</span><span class="lbl">Semantic Object</span></div>
+        <div class="nav-it" data-nav="events" onclick="navGo('events')"><span class="ico">⚡</span><span class="lbl">Events</span></div>
+        <div class="nav-it" data-nav="system" onclick="navGo('system')"><span class="ico">⚙️</span><span class="lbl">System</span></div>
+        <div id="navconn">● Connection: <b id="conn-line">initializing…</b></div>
+    </nav>
+
+    <!-- stage -->
+    <main id="stage">
+        <div id="viewport"><div id="world"></div></div>
+        <div id="modebar">
+            <button class="modebtn active" data-mode="space" id="m-space" onclick="setMode('space')">🌌 Space View</button>
+            <button class="modebtn" data-mode="tree" id="m-tree" onclick="setMode('tree')">🌲 Tree View</button>
+            <button class="modebtn" data-mode="graph" id="m-graph" onclick="setMode('graph')">🕸 Graph View</button>
+            <button class="modebtn" data-mode="focus" id="m-focus" onclick="setMode('focus')"> 🔦 Focus</button>
+        </div>
+        <div id="zoomctl">
+            <button class="zbtn" onclick="zoomStep(-1)">−</button>
+            <span id="zlabel">100% · World</span>
+            <button class="zbtn" onclick="zoomStep(1)">＋</button>
+            <button class="zpre" id="zp-world" onclick="preset('world')">World</button>
+            <button class="zpre" id="zp-cluster" onclick="preset('cluster')">Cluster</button>
+            <button class="zpre" id="zp-object" onclick="preset('object')">Object</button>
+            <button class="zpre" id="zp-detail" onclick="preset('detail')">Detail</button>
+        </div>
+        <div id="stickyhint">wheel — zoom · drag — pan · double click — zoom in</div>
+        <div id="glegend"></div>
+        <div id="toasts"></div>
+    </main>
+
+    <!-- right sidebar -->
+    <aside id="sidebar"></aside>
+
+    <!-- footer -->
+    <footer id="bottombar">
+        <div class="foot-sec">◍ <b>Activity</b>&nbsp;<span class="ticker" id="ticker">…</span></div>
+        <div class="foot-sec">🕘 <b>Recent objects</b><span id="recent-chip" style="display:inline-flex;gap:6px;overflow:hidden"></span></div>
+        <div class="foot-sec">✦ <b>Quick actions</b>
+            <button class="chip" onclick="runScan()">🔍 Scan</button>
+            <button class="chip" onclick="document.getElementById('q').focus()">✦ Search</button>
+            <button class="chip" onclick="newMission()">＋ Mission</button>
+            <button class="chip" onclick="openAgentPanel()">⌁ OpenCode</button>
+        </div>
+        <div class="foot-sec fstats" style="margin-left:auto;gap:16px">
+            <span id="f-net"></span>
+            <span id="f-prov"></span>
+            <span id="f-roots"></span>
+            <span id="f-missions"></span>
+        </div>
+    </footer>
+
+    <!-- architecture modal -->
+    <div class="modal" id="arch" onclick="if(event.target===this)closeArch()" role="dialog" aria-label="Architecture panel" aria-modal="true">
+        <div class="mpanel">
+            <div class="mhead">
+                <h2>▦ SpaceOS — Architecture (ASD-STE100, live data)</h2>
+                <div><button class="topbtn" onclick="closeArch()">Close</button></div>
+            </div>
+            <div id="archbody"></div>
+        </div>
+    </div>
+
+    <!-- file reader modal -->
+    <div class="modal" id="reader" onclick="if(event.target===this)closeReader()" role="dialog" aria-label="Reader panel" aria-modal="true">
+        <div class="mpanel">
+            <div class="mhead"><h2 id="readertitle">File reading</h2><button class="mclose" onclick="closeReader()">✕</button></div>
+            <pre id="readerpre"></pre>
+        </div>
+    </div>
+
+    <!-- File creation uses the existing Bridge -> Core Policy -> filesystem provider route. -->
+    <div class="modal" id="filecreate" onclick="if(event.target===this)closeFileCreate()" role="dialog" aria-label="Create file panel" aria-modal="true">
+        <div class="mpanel">
+            <div class="mhead"><h2>＋ Create file</h2><button class="mclose" onclick="closeFileCreate()">✕</button></div>
+            <div class="filecreate-grid">
+                <label><span class="filecreate-label">Allowed directory</span>
+                    <select id="filecreate-dir" class="filecreate-input"></select>
+                </label>
+                <label><span class="filecreate-label">File name</span>
+                    <input id="filecreate-name" class="filecreate-input" value="world-manual-stage2.txt" autocomplete="off" spellcheck="false">
+                </label>
+                <label><span class="filecreate-label">Content</span>
+                    <textarea id="filecreate-content" class="filecreate-input" placeholder="File content"></textarea>
+                </label>
+                <div class="filecreate-actions">
+                    <button id="filecreate-submit" class="topbtn" onclick="createFileFromWorld()">Create file</button>
+                    <button id="filecreate-open" class="topbtn" onclick="openCreatedFile()" disabled>Open in World</button>
+                    <span id="filecreate-status">Select a permitted directory and enter a new file name.</span>
+                </div>
+                <div class="perm"><span class="ic">🔒</span><span>Creation runs through Core Policy and the Filesystem Provider. Existing files are never overwritten.</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OpenCode control through the server-side Agent Gateway -->
+    <div class="modal" id="agentpanel" onclick="if(event.target===this)closeAgentPanel()" role="dialog" aria-label="Agent panel" aria-modal="true">
+        <div class="mpanel">
+            <div class="mhead">
+                <h2>⌁ OpenCode Agent Gateway</h2>
+                <div style="display:flex;gap:8px">
+                    <button class="topbtn" onclick="loadAgentSessions()">↻ Sessions</button>
+                    <button class="mclose" onclick="closeAgentPanel()">✕</button>
+                </div>
+            </div>
+            <div class="agent-grid">
+                <div class="agent-box">
+                    <div class="agent-label">Existing OpenCode session</div>
+                    <select id="agent-session" class="agent-select"></select>
+                    <div class="agent-label" style="margin-top:12px">Command</div>
+                    <textarea id="agent-input" class="agent-input" placeholder="Покажи состояние SpaceOS"></textarea>
+                    <div class="agent-actions">
+                        <button id="agent-send" class="topbtn" onclick="sendAgentMessage()">Send</button>
+                        <span id="agent-state" class="agent-state">Not connected</span>
+                    </div>
+                </div>
+                <div class="agent-box">
+                    <div class="agent-label">Agent response</div>
+                    <div id="agent-answer" class="agent-answer">Select a session and send a command.</div>
+                </div>
+            </div>
+            <div class="agent-note">OpenCode runs its own tools and permissions. SpaceOS resource actions are governed by SpaceOS Policy only when the agent uses the configured SpaceOS MCP tools. Credentials remain in Bridge and are never sent to this page.</div>
+        </div>
+    </div>
+
+    <!-- embedded browser panel: real Chromium tabs shown as live CDP frames -->
+    <div class="modal" id="browser" onclick="if(event.target===this)closeBrowser()" role="dialog" aria-label="Browser panel" aria-modal="true">
+        <div class="mpanel">
+            <div class="mhead">
+                <h2>🌐 SpaceOS Browser <span class="bhint">real Chromium tabs · live CDP frames</span></h2>
+                <div style="display:flex;gap:8px;">
+                    <button class="topbtn" onclick="bfNewTab()" disabled title="Loading Browser authority">＋ Tab</button>
+                    <button class="mclose" onclick="closeBrowser()">✕</button>
+                </div>
+            </div>
+            <div class="btabs" id="btabs"></div>
+            <div class="bbar">
+                <input id="burl" class="binput" placeholder="https://…  (address of selected tab)" spellcheck="false" autocomplete="off">
+                <button class="topbtn" onclick="bfGo()" disabled>Go</button>
+                <button class="topbtn" onclick="bfReload()" disabled>⟳ Reload</button>
+                <button class="topbtn" onclick="bfShow()" disabled title="Loading Browser authority">👁 Show in Chromium</button>
+            </div>
+            <div class="bframe-wrap">
+                <img id="bframe" class="bframe" alt="Frame of selected tab page (CDP)" style="display:none">
+                <div class="bframe-empty" id="bfempty">Frame will appear after tab connection…</div>
+            </div>
+            <div class="bstatus" id="bstatus">Select tab…</div>
+            <div class="bnote">View — live page frame via CDP (<span class="mono">Page.captureScreenshot</span>, ~1.5 s), no mimicry and no security policy bypass. Clicks inside the page are not forwarded by this contract — interactivity happens in the Chromium window via «Show in Chromium» or through the built-in <b>iframe surface</b> (`#bframe`) when loaded. URL navigation, refresh, tab create/close run through the existing browser-provider via Core Policy (`POST /providers/browser/actions`). Native embedded browser (`C# WinForms + WebView2`) requires `.NET SDK` + `WebView2 SDK loader` (not installed in this environment); current vertical slice uses the iframe surface with the same Provider contracts.</div>
+        </div>
+    </div>
+
+    <!-- Semantic Object Create modal -->
+    <div class="modal" id="semobjcreate" onclick="if(event.target===this)closeSemObjCreate()" role="dialog" aria-label="Create semantic object" aria-modal="true">
+        <div class="mpanel">
+            <div class="mhead"><h2>＋ Create Semantic Object</h2><button class="mclose" onclick="closeSemObjCreate()">✕</button></div>
+            <div class="semobj-grid">
+                <label><span class="semobj-label">Object Type</span>
+                    <input id="semobjcreate-type" class="semobj-input" value="Note" autocomplete="off" spellcheck="false" placeholder="e.g., Note, Document, Idea, Task">
+                </label>
+                <label><span class="semobj-label">Display Name (optional)</span>
+                    <input id="semobjcreate-name" class="semobj-input" autocomplete="off" spellcheck="false" placeholder="Human-readable name">
+                </label>
+                <label><span class="semobj-label">Custom Properties (JSON)</span>
+                    <textarea id="semobjcreate-props" class="semobj-input" placeholder='{"key": "value", "tags": ["tag1", "tag2"]}'></textarea>
+                </label>
+                <div class="semobj-actions">
+                    <button id="semobjcreate-submit" class="topbtn" onclick="createSemanticObject()">Create Object</button>
+                    <span id="semobjcreate-status">Enter object type and optional properties.</span>
+                </div>
+                <div class="perm"><span class="ic">🔒</span><span>Created through Core Semantic API (space-world-user actor). Object gets semantic ownership marker.</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Semantic Object Edit modal -->
+    <div class="modal" id="semobjedit" onclick="if(event.target===this)closeSemObjEdit()" role="dialog" aria-label="Edit semantic object" aria-modal="true">
+        <div class="mpanel">
+            <div class="mhead"><h2>✎ Edit Semantic Object</h2><button class="mclose" onclick="closeSemObjEdit()">✕</button></div>
+            <div class="semobjedit-grid">
+                <label><span class="semobjedit-label">Object ID (read-only)</span>
+                    <input id="semobjedit-id" class="semobjedit-input" readonly>
+                </label>
+                <label><span class="semobjedit-label">Object Type (read-only)</span>
+                    <input id="semobjedit-type" class="semobjedit-input" readonly>
+                </label>
+                <label><span class="semobjedit-label">Display Name (editable)</span>
+                    <input id="semobjedit-name" class="semobjedit-input" autocomplete="off" spellcheck="false">
+                </label>
+                <label><span class="semobjedit-label">Custom Properties (JSON, editable)</span>
+                    <textarea id="semobjedit-props" class="semobjedit-input" placeholder='{"key": "value", "tags": ["tag1", "tag2"]}'></textarea>
+                </label>
+                <div class="semobjedit-actions">
+                    <button id="semobjedit-submit" class="topbtn" onclick="saveSemanticObject()">Save Changes</button>
+                    <span id="semobjedit-status">Edit properties and save.</span>
+                </div>
+                <div class="perm"><span class="ic">🔒</span><span>Only properties can be changed. Identity, ownership, and system fields are immutable.</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Semantic Relation Create modal -->
+    <div class="modal" id="semrelcreate" onclick="if(event.target===this)closeSemRelCreate()" role="dialog" aria-label="Create semantic relation" aria-modal="true">
+        <div class="mpanel">
+            <div class="mhead"><h2>🔗 Create Semantic Relation</h2><button class="mclose" onclick="closeSemRelCreate()">✕</button></div>
+            <div class="semrel-grid">
+                <label><span class="semrel-label">Source Object</span>
+                    <select id="semrelcreate-source" class="semrel-select"></select>
+                </label>
+                <label><span class="semrel-label">Target Object</span>
+                    <select id="semrelcreate-target" class="semrel-select"></select>
+                </label>
+                <label><span class="semrel-label">Relation Type</span>
+                    <select id="semrelcreate-type" class="semrel-select" disabled>
+                        <option value="related_to">related_to</option>
+                    </select>
+                </label>
+                <label><span class="semrel-label">Properties (JSON, optional)</span>
+                    <textarea id="semrelcreate-props" class="semrel-input" placeholder='{"note": "why they are related"}'></textarea>
+                </label>
+                <div class="semrel-actions">
+                    <button id="semrelcreate-submit" class="topbtn" onclick="createSemanticRelation()">Create Relation</button>
+                    <span id="semrelcreate-status">Select source and target semantic objects.</span>
+                </div>
+                <div class="perm"><span class="ic">🔗</span><span>Only <code>related_to</code> is allowed. Both objects must be in the configured semantic world with valid ownership.</span></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+        // ============ helpers ============
+        const $ = id => document.getElementById(id);
+        const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g,
+            c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const fmtTime = ts => { try { return ts ? new Date(ts).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'; } catch (e) { return '—'; } };
+        const fmtWhen = ts => { try { if (!ts) return '—'; const d = new Date(ts); return d.toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' }); } catch (e) { return '—'; } };
+        const hash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
+        const trunc = (s, n) => { s = String(s == null ? '' : s); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+
+        // H1-only integration adapter: explicit synthetic login, never a Core credential.
+        let H1LabCsrf = '';
+        // Laboratory pages share one HttpOnly cookie. Keep only its CSRF in
+        // memory synchronized when the owner explicitly logs in in Shell.
+        const Mvp2AuthChannel = location.origin === 'http://127.0.0.1:21973'
+            ? new BroadcastChannel('spaceos-mvp2-lab-csrf') : null;
+        if (Mvp2AuthChannel) Mvp2AuthChannel.onmessage = e => {
+            if (e.data?.kind === 'explicit-lab-login' && typeof e.data.csrf === 'string'
+                && /^[0-9a-f]{64}$/.test(e.data.csrf)) H1LabCsrf = e.data.csrf;
+        };
+        async function h1LabLogin() {
+            const proof = document.getElementById('h1-login-proof');
+            const status = document.getElementById('h1-login-status');
+            status.textContent = 'Signing in…';
+            try {
+                const r = await fetch(location.origin + '/api/lab-auth/login', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ proof: proof.value, world_id: document.getElementById('h1-login-world').value })
+                });
+                proof.value = '';
+                const v = await r.json();
+                if (!r.ok || !v.ok || typeof v.csrf !== 'string') throw new Error('Laboratory login rejected');
+                H1LabCsrf = v.csrf; // Memory only. HttpOnly cookie is set by Bridge.
+                Mvp2AuthChannel?.postMessage({ kind: 'explicit-lab-login', csrf: H1LabCsrf });
+                status.textContent = 'Synthetic laboratory session active';
+                document.getElementById('h1-login').hidden = true;
+                connectWs(); loadWorld(); loadSide(); loadBrowserAuthority(); loadTabs();
+            } catch (_) { proof.value = ''; H1LabCsrf = ''; status.textContent = 'Laboratory login failed'; }
+        }
+        if (location.hostname === '127.0.0.1' && location.port === '21973') {
+            const login = document.createElement('section');
+            login.id = 'h1-login';
+            login.style.cssText = 'position:fixed;z-index:10000;top:70px;left:20px;padding:16px;background:#152034;color:white;border:1px solid #60a5fa;border-radius:8px;max-width:460px';
+            login.innerHTML = '<h2>H1 synthetic laboratory login</h2><p>No production credentials. Memory-only CSRF.</p>'
+                + '<label>World <input id="h1-login-world" autocomplete="off"></label><br>'
+                + '<label>Lab proof <input id="h1-login-proof" type="password" autocomplete="off"></label><br>'
+                + '<button id="h1-login-submit" type="button">Sign in</button><p id="h1-login-status" role="status">Explicit login required</p>';
+            document.body.appendChild(login);
+            document.getElementById('h1-login-submit').addEventListener('click', h1LabLogin);
+        }
+        async function fetchJson(url, opts = {}, timeout = 12000) {
+            const ctl = new AbortController();
+            const t = setTimeout(() => ctl.abort(), timeout);
+            try { return await fetch(url, { ...opts, signal: ctl.signal }); }
+            finally { clearTimeout(t); }
+        }
+        async function GET(ep, t = 12000) {
+            const r = await fetchJson(location.origin + '/api' + ep, {}, t);
+            if (!r.ok) { const error = await r.json().catch(() => ({})); throw new Error(error.error || ('HTTP ' + r.status + ' ' + ep)); }
+            return r.json();
+        }
+        async function POST(ep, body = {}, t = 12000, method = 'POST') {
+            const r = await fetchJson(location.origin + '/api' + ep, {
+                method, headers: { 'Content-Type': 'application/json', ...(H1LabCsrf ? { 'x-spaceos-csrf': H1LabCsrf } : {}) }, body: JSON.stringify(body)
+            }, t);
+            if (!r.ok) { const error = await r.json().catch(() => ({})); throw new Error(error.error || ('HTTP ' + r.status + ' ' + ep)); }
+            return r.json();
+        }
+        function toast(msg, err) {
+            const d = document.createElement('div');
+            d.className = 'toast' + (err ? ' err' : '');
+            d.textContent = msg;
+            $('toasts').appendChild(d);
+            setTimeout(() => d.remove(), err ? 6500 : 4500);
+        }
+
+        // ============ state ============
+        const W = {
+            objects: [], relations: [], events: [], missions: [], actions: [],
+            tabs: [], components: null, providers: [], roots: [],
+            mode: 'space', sel: null, selCluster: null, ready: false
+        };
+
+        const TYPES = {
+            Files: t => t === 'File' || t === 'Directory',
+            Web: t => t === 'BrowserTab',
+            Mission: t => t === 'Mission' || t === 'MissionStep',
+            Agents: t => t === 'Agent',
+            Projects: t => t === 'Project' || t === 'Document' || t === 'Result',
+            System: t => t === 'Setting' || t === 'Component'
+        };
+        const typeIcon = t => {
+            if (t === 'Directory') return '📁'; if (t === 'File') return '📄';
+            if (t === 'BrowserTab') return '🪐'; if (t === 'Mission') return '🎯';
+            if (t === 'MissionStep') return '▸'; if (t === 'Agent') return '🤖';
+            if (t === 'Project') return '🗂'; if (t === 'Document') return '📘';
+            if (t === 'Result') return '📊'; return '🧩';
+        };
+        const clusterOf = o => {
+            for (const c in TYPES) if (c !== 'System' && TYPES[c](o.type)) return c;
+            return 'Projects';
+        };
+        const objName = o => (o.type === 'BrowserTab' && o.properties && (o.properties.title || o.properties.url))
+            || (o.properties && (o.properties.name || o.properties.goal))
+            || o.external_id || (o.type + '·' + String(o.id || '').slice(0, 6));
+        const nameFor = o => {
+            if (o && o.properties && o.properties.title) return o.properties.title;
+            return objName(o);
+        };
+        const objPath = o => (o.properties && (o.properties.path || o.properties.full_path)) || o.external_id || '';
+
+        const CL = { // cluster static config: colors, labels, world positions
+            Files:    { col: '#38bdf8', label: 'Files',   icon: '📁', ang: 178 },
+            Web:      { col: '#a78bfa', label: 'Web',     icon: '🪐', ang: -90 },
+            Mission:  { col: '#f59e0b', label: 'Mission', icon: '🎯', ang: 15 },
+            Agents:   { col: '#34d399', label: 'Agents',  icon: '🤖', ang: -40 },
+            Events:   { col: '#f87171', label: 'Events',  icon: '⚡', ang: 90 },
+            Projects: { col: '#60a5fa', label: 'Projects',  icon: '🗂', ang: -130 },
+            System:   { col: '#94a3b8', label: 'System', icon: '⚙️', ang: 140 }
+        };
+        const CLUSTER_RADIUS = 540;
+        const clPos = name => { // cluster center in world coords (y inverted, screen-like)
+            const a = CL[name].ang * Math.PI / 180;
+            return { x: Math.cos(a) * CLUSTER_RADIUS, y: Math.sin(a) * CLUSTER_RADIUS * 0.72 };
+        };
+
+        const missionStateOf = oid => {
+            const m = (W.missions || []).find(x => x.mission_id === oid);
+            // byId() is the O(1) identity index. The previous W.objects.find()
+            // was an O(N) scan on every call, and the Mission cluster branch
+            // calls this once per candidate object, which made a single Space
+            // or Tree render O(N^2).
+            return m ? m.state : (byId(oid)?.properties?.state || '');
+        };
+        const isTerminal = st => ['completed', 'failed', 'cancelled'].includes(String(st).toLowerCase());
+        const stateColor = st => !st ? 'var(--muted)' :
+            ({ running: 'var(--green)', created: '#7dd3fc', planned: '#fbbf24', verifying: '#c4b5fd',
+               awaiting_approval: 'var(--amber)', completed: 'var(--green)', failed: 'var(--red)', cancelled: '#94a3b8' }[st.toLowerCase()] || 'var(--muted)');
+
+        // ============ data loading (generation-guarded pollers) ============
+        let genWorld = 0, genSide = 0, genTabs = 0;
+        // Single-flight guards. Overlapping refreshes (poll + WebSocket
+        // semantic event + manual refresh) used to run in parallel and the
+        // older response was discarded entirely, so a later failure could
+        // throw away already-received data. Now an in-flight load is reused
+        // and any request that arrived while it was running is coalesced into
+        // exactly one follow-up load.
+        let worldBusy = false, worldAgain = false;
+        let sideBusy = false, sideAgain = false;
+        let tabsBusy = false, tabsAgain = false;
+
+        async function loadWorld() {
+            if (worldBusy) { worldAgain = true; return; }
+            worldBusy = true;
+            const g = ++genWorld;
+            try {
+                const [o, r, e] = await Promise.all([
+                    POST('/objects/query', {}, 15000),
+                    POST('/relations/query', {}, 15000),
+                    GET('/events?limit=50', 12000)
+                ]);
+                if (g !== genWorld) return;
+                W.objects = o.objects || [];
+                W.relations = r.relations || [];
+                W.events = e.events || [];
+                if (!W.ready) firstReady(); else { scheduleRender(); renderNavCounters(); renderFooter(); }
+            } catch (err) {
+                if (g === genWorld) connBad('Core unavailable: ' + trunc(err.message, 60));
+            } finally {
+                worldBusy = false;
+                if (worldAgain) { worldAgain = false; loadWorld(); }
+            }
+        }
+        async function loadSide() {
+            if (sideBusy) { sideAgain = true; return; }
+            sideBusy = true;
+            const g = ++genSide;
+            try {
+                const [mi, ac, co, pr, ro] = await Promise.all([
+                    GET('/missions', 12000),
+                    GET('/actions/recent?limit=50', 12000),
+                    GET('/components', 12000),
+                    GET('/providers', 12000),
+                    GET('/filesystem/roots', 10000).then(value => ({ value, error: null }))
+                        .catch(error => ({ value: null, error: error.message }))
+                ]);
+                if (g !== genSide) return;
+                W.missions = mi.missions || [];
+                W.actions = ac.actions || [];
+                W.components = co.components || {};
+                W.providers = pr.providers || [];
+                W.roots = (ro.value && ro.value.result && ro.value.result.result && ro.value.result.result.roots) || [];
+                renderFooter(); renderNavCounters();
+                if (ro.error) {
+                    $('f-roots').textContent = 'Filesystem Provider unavailable';
+                    $('f-roots').title = ro.error;
+                }
+                // summary card is also live: preserve scroll, update contents
+                const st = $('sidebar').scrollTop;
+                renderSidebar();
+                $('sidebar').scrollTop = st;
+                scheduleRender();
+            } catch (err) {
+                if (g === genSide) connBad('Bridge unavailable: ' + trunc(err.message, 60));
+            } finally {
+                sideBusy = false;
+                if (sideAgain) { sideAgain = false; loadSide(); }
+            }
+        }
+        function canBrowser(action) {
+            return W.browserAuthorityReady === true && W.browserCaps.includes('action.' + action);
+        }
+        function applyBrowserMode(mode, caps) {
+            const allowed = mode === 'scoped' ? ['action.get_tabs', 'action.screenshot'] : ['action.get_tabs', 'action.screenshot', 'action.navigate', 'action.reload', 'action.get_page_content', 'action.new_tab', 'action.activate_tab', 'action.close_tab'];
+            W.browserAuthorityReady = (mode === 'scoped' || mode === 'legacy') && Array.isArray(caps)
+                && caps.every(c => allowed.includes(c)) && caps.includes('action.get_tabs');
+            W.browserCaps = W.browserAuthorityReady ? caps.slice() : [];
+            if (W.browserAuthorityReady) W.browserScoped = mode === 'scoped';
+            if (W.browserScoped) {
+                const note = document.querySelector('#browser .bnote');
+                if (note) note.textContent = 'Scoped World Browser: live list and read-only screenshots only. Core validates the canonical object, World, instance, source and runtime epoch; Provider rechecks the signed authority before CDP. Navigation, activation, reload, new tabs, close, page content and scripts are unavailable in this mode. Stored tab metadata remains a creation snapshot.';
+            }
+            document.querySelectorAll('#browser button[onclick]').forEach(el => {
+                const action = {bfNewTab:'new_tab',bfGo:'navigate',bfReload:'reload',bfShow:'activate_tab'}[(el.getAttribute('onclick') || '').split('(')[0]];
+                if (action) {
+                    el.disabled = !canBrowser(action);
+                    el.title = el.disabled ? 'Browser action unavailable or authority not loaded' : '';
+                }
+            });
+            document.querySelectorAll('[data-action="activateBrowserObject"], [data-action="bfCloseTab"]').forEach(el => {
+                el.hidden = !canBrowser(el.getAttribute('data-action') === 'bfCloseTab' ? 'close_tab' : 'activate_tab');
+            });
+        }
+        async function loadBrowserAuthority() {
+            try { const d = await GET('/context', 10000); applyBrowserMode(d.context?.browser_mode, d.context?.browser_capabilities); }
+            catch (_) { applyBrowserMode(null, null); }
+        }
+        async function loadTabs() {
+            if (tabsBusy) { tabsAgain = true; return; }
+            tabsBusy = true;
+            const g = ++genTabs;
+            try {
+                const d = await GET('/browser/tabs', 10000);
+                if (g !== genTabs) return;
+                applyBrowserMode(d.browser_mode, d.browser_capabilities);
+                W.tabs = (d.result && d.result.result && d.result.result.detail && d.result.result.detail.tabs)
+                    || (d.result && d.result.result && d.result.result.tabs) || (d.result && d.result.tabs) || [];
+                renderFooter();
+                if (W_mode() === 'space' || W_mode() === 'graph') scheduleRender();
+            } catch (err) {
+                if (g === genTabs) { applyBrowserMode(null, null); W.tabs = []; renderFooter(); }
+            } finally {
+                tabsBusy = false;
+                if (tabsAgain) { tabsAgain = false; loadTabs(); }
+            }
+        }
+
+        function connBad(msg) { $('conn-line').textContent = msg; $('conn-line').className = 'bad'; }
+
+        // ============ live WebSocket (status, as in Shell) ============
+        let ws = null;
+        // Reconnect bookkeeping. A socket that has been superseded must not
+        // schedule another reconnect (that produced a growing chain of
+        // sockets/timers), and only one reconnect may be pending at a time.
+        let wsReconnectTimer = null;
+        let wsGen = 0;
+        function connectWs() {
+            const myGen = ++wsGen;
+            if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
+            try {
+                const sock = new WebSocket(location.origin.replace(/^http/, 'ws') + '/ws');
+                ws = sock;
+                sock.onopen = () => { if (myGen === wsGen) wsFine(); };
+                sock.onmessage = ev => {
+                    if (myGen !== wsGen) return; // superseded socket
+                    try {
+                        const msg = JSON.parse(ev.data);
+                        if (msg.type === 'semantic_event' && msg.event?.seq > (W.semanticSeq || 0)) {
+                            W.semanticSeq = msg.event.seq;
+                            loadWorld();
+                        }
+                        if (msg.type === 'agent_update' && msg.request_id === A.requestId) {
+                            renderAgentUpdate(msg.update || {});
+                        }
+                    } catch (_) { /* ignore unrelated/non-JSON updates */ }
+                };
+                sock.onclose = () => {
+                    if (myGen !== wsGen) return; // superseded: do not chain another socket
+                    wsBadSoon();
+                    if (!wsReconnectTimer) {
+                        wsReconnectTimer = setTimeout(() => { wsReconnectTimer = null; connectWs(); }, 12000);
+                    }
+                };
+                sock.onerror = () => { if (myGen === wsGen) wsBadSoon(); };
+            } catch (e) { wsBadSoon(); }
+        }
+        function wsFine() {
+            $('wstxt').textContent = 'WebSocket: Connected';
+            $('wsbadge').classList.remove('off');
+        }
+        function wsBadSoon() {
+            $('wstxt').textContent = 'Offline · polling';
+            $('wsbadge').classList.add('off');
+        }
+
+        // ============ OpenCode Agent Gateway ============
+        const A = { requestId: null, poll: null, loading: false };
+
+        async function agentJson(ep, opts = {}, timeout = 20000) {
+            const r = await fetchJson(location.origin + '/api/agent' + ep, opts, timeout);
+            let body = null;
+            try { body = await r.json(); } catch (_) {}
+            if (!r.ok) throw new Error((body && body.error) || ('HTTP ' + r.status));
+            return body || {};
+        }
+
+        function openAgentPanel() {
+            $('agentpanel').classList.add('open');
+            loadAgentSessions();
+            setTimeout(() => $('agent-input').focus(), 0);
+        }
+
+        function closeAgentPanel() { $('agentpanel').classList.remove('open'); }
+
+        async function loadAgentSessions() {
+            if (A.loading) return;
+            A.loading = true;
+            setAgentState('Loading sessions…', 'running');
+            const select = $('agent-session');
+            const selected = select.value;
+            try {
+                const data = await agentJson('/sessions', {}, 12000);
+                select.replaceChildren();
+                (data.sessions || []).forEach(s => {
+                    const option = document.createElement('option');
+                    option.value = s.id;
+                    const location = s.location && (s.location.directory || s.location.path);
+                    option.textContent = (s.title || s.id) + ' · ' + (s.status || 'idle') + (location ? ' · ' + location : '');
+                    select.appendChild(option);
+                });
+                if (selected && [...select.options].some(o => o.value === selected)) select.value = selected;
+                if (!select.options.length) {
+                    const option = document.createElement('option');
+                    option.textContent = 'No sessions available'; option.value = '';
+                    select.appendChild(option);
+                }
+                setAgentState((data.count || 0) + ' session(s)', '');
+            } catch (e) {
+                select.replaceChildren();
+                const option = document.createElement('option');
+                option.textContent = 'OpenCode unavailable'; option.value = '';
+                select.appendChild(option);
+                setAgentState('Unavailable', 'error');
+                $('agent-answer').textContent = e.message;
+            } finally { A.loading = false; }
+        }
+
+        async function sendAgentMessage() {
+            const sessionId = $('agent-session').value;
+            const message = $('agent-input').value.trim();
+            if (!sessionId) return setAgentState('Select a session', 'error');
+            if (!message) return setAgentState('Enter a command', 'error');
+            $('agent-send').disabled = true;
+            $('agent-answer').textContent = '';
+            setAgentState('Sending…', 'running');
+            try {
+                const data = await agentJson('/send', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId, message })
+                }, 25000);
+                A.requestId = data.request_id;
+                renderAgentUpdate({ status: 'running' });
+                if (A.poll) clearInterval(A.poll);
+                A.poll = setInterval(pollAgentStatus, 1500);
+            } catch (e) {
+                renderAgentUpdate({ status: 'error', error: e.message });
+            }
+        }
+
+        async function pollAgentStatus() {
+            if (!A.requestId) return;
+            try {
+                const data = await agentJson('/status/' + encodeURIComponent(A.requestId), {}, 10000);
+                renderAgentUpdate(data.update || {});
+            } catch (e) {
+                setAgentState('Status error: ' + trunc(e.message, 80), 'error');
+            }
+        }
+
+        function renderAgentUpdate(update) {
+            const status = update.status || 'running';
+            if (status === 'running') {
+                setAgentState('OpenCode is working…', 'running');
+                return;
+            }
+            if (A.poll) { clearInterval(A.poll); A.poll = null; }
+            $('agent-send').disabled = false;
+            if (status === 'completed') {
+                setAgentState('Completed', 'completed');
+                $('agent-answer').textContent = update.response || '(empty response)';
+            } else {
+                setAgentState('Error', 'error');
+                $('agent-answer').textContent = update.error || 'Unknown OpenCode error';
+            }
+        }
+
+        function setAgentState(text, status) {
+            const el = $('agent-state');
+            el.textContent = text;
+            el.className = 'agent-state' + (status ? ' ' + status : '');
+        }
+
+        // ============ zoom & pan engine ============
+        const Z = { x: 0, y: 0, s: 1, fit: 1 };
+        const world = () => $('world'), vp = () => $('viewport');
+
+        function fitScale() {
+            const aw = vp().clientWidth * 0.92, ah = vp().clientHeight * 0.92;
+            const needW = 1800, needH = 1200;
+            return Math.min(aw / needW, ah / needH);
+        }
+        function applyZoom() {
+            world().style.transform = 'translate(' + Z.x.toFixed(1) + 'px,' + Z.y.toFixed(1) + 'px) scale(' + Z.s.toFixed(4) + ')';
+            const pct = Math.round(Z.s / Z.fit * 100);
+            const zone = pct >= 640 ? 'Detail' : pct >= 320 ? 'Object' : pct >= 185 ? 'Cluster' : 'World';
+            world().classList.toggle('focus-detail', W.mode === 'focus' && zone === 'Detail');
+            $('zlabel').textContent = pct + '% · ' + zone;
+            ['zp-world', 'zp-cluster', 'zp-object', 'zp-detail'].forEach((id, i) => {
+                const target = [1, 2.5, 5, 8][i];
+                $(id).classList.toggle('active', Math.abs(Z.s / Z.fit - target) < .2);
+            });
+        }
+        let smoothT = null;
+        function smooth(fn) {
+            const w = world();
+            w.classList.add('anim');
+            clearTimeout(smoothT);
+            smoothT = setTimeout(() => w.classList.remove('anim'), 520);
+            fn();
+        }
+        function refit() {
+            const rel = Z.s / (Z.fit || 1);
+            Z.fit = fitScale();
+            Z.s = Z.fit * rel; // preserve relative zoom; at start rel=1 => 100% «World»
+            applyZoom();
+        }
+        const trimRoot = p => String(p || '').startsWith('\\\\?\\') ? p.slice(4) : p;
+        function zoomAt(cx, cy, factor) {
+            const min = Z.fit * 0.6, max = Z.fit * 12;
+            const ns = Math.min(max, Math.max(min, Z.s * factor));
+            if (ns === Z.s) return;
+            const rect = vp().getBoundingClientRect();
+            const px = (cx - rect.width / 2 - Z.x) / Z.s;
+            const py = (cy - rect.height / 2 - Z.y) / Z.s;
+            Z.s = ns;
+            Z.x = cx - rect.width / 2 - px * ns;
+            Z.y = cy - rect.height / 2 - py * ns;
+            applyZoom();
+        }
+        function zoomStep(dir) { const r = vp().getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, dir > 0 ? 1.25 : 0.8); }
+        function preset(k) {
+            const r = vp().getBoundingClientRect();
+            // focus target: current selection center
+            let tx = 0, ty = 0;
+            if (W.mode === 'tree') { const tree = world().querySelector('.tree-wrap'); if (tree) ty = tree.offsetHeight / 2; }
+            if ((W.mode === 'space' || W.mode === 'graph') && (k === 'cluster' || k === 'object' || k === 'detail') && W.selCluster) { const p = clPos(W.selCluster); tx = p.x; ty = p.y; }
+            if (W.mode !== 'tree' && (k === 'object' || k === 'detail') && W.selObj) {
+                const pos = nodePos(W.selObj); if (pos) { tx = pos.x; ty = pos.y; }
+            }
+            const scale = k === 'world' ? 1 : k === 'cluster' ? 2.5 : k === 'object' ? 5 : 8;
+            Z.s = Z.fit * scale;
+            const offX = (W.mode !== 'focus' && k === 'detail' && W.selObj) ? r.width * 0.18 : 0;
+            Z.x = -tx * Z.s - offX;
+            Z.y = -ty * Z.s;
+            smooth(applyZoom);
+        }
+        function resetZoom() { smooth(() => { Z.x = 0; Z.y = 0; refit(); }); }
+        window.addEventListener('resize', () => { refit(); scheduleRender(); });
+
+        // pan
+        let drag = null;
+        (function bindPan() {
+            const v = $('viewport');
+            v.addEventListener('pointerdown', e => {
+                if (e.button !== 0) return;
+                drag = { sx: e.clientX, sy: e.clientY, ox: Z.x, oy: Z.y, moved: false };
+                v.classList.add('drag'); v.setPointerCapture(e.pointerId);
+            });
+            v.addEventListener('pointermove', e => {
+                if (!drag) return;
+                const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+                if (Math.abs(dx) + Math.abs(dy) > 4) drag.moved = true;
+                Z.x = drag.ox + dx; Z.y = drag.oy + dy; applyZoom();
+            });
+            v.addEventListener('pointerup', e => {
+                v.classList.remove('drag');
+                if (drag && !drag.moved && e.target.closest('.cluster, .mininode, .gnode, .titem, .thead, .core-node, .focus-card, .mchip')) { /* click handled elsewhere */ }
+                drag = null;
+            });
+            v.addEventListener('wheel', e => {
+                e.preventDefault();
+                if (e.ctrlKey) { zoomAt(e.clientX - v.getBoundingClientRect().left, e.clientY - v.getBoundingClientRect().top, e.deltaY < 0 ? 1.18 : 1 / 1.18); }
+                else { zoomAt(e.clientX - v.getBoundingClientRect().left, e.clientY - v.getBoundingClientRect().top, e.deltaY < 0 ? 1.1 : 1 / 1.1); }
+            }, { passive: false });
+            v.addEventListener('dblclick', e => {
+                const n = e.target.closest('.mininode, .gnode, .titem, .mchip');
+                if (n) { const id = n.getAttribute('data-oid'); const o = byId(id); if (o || id && id.startsWith('tab:')) { selectObj(id); preset('detail'); return; } }
+                zoomStep(1);
+            });
+        })();
+        window.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT') return;
+            if (e.key === '+' || e.key === '=') zoomStep(1);
+            if (e.key === '-') zoomStep(-1);
+            if (e.key === '0') resetZoom();
+        });
+
+        // Object identity index (canonical ids + browser-tab aliases).
+        // Rebuilt only when the object list identity changes, so it is a
+        // temporary lookup map, never a second source of truth.
+        let _objIndex = null, _objIndexRef = null;
+        function objIndex() {
+            if (_objIndexRef !== W.objects) {
+                _objIndexRef = W.objects;
+                const m = new Map();
+                for (const o of W.objects) {
+                    if (!o) continue;
+                    // Same ordering rule as the previous linear scan: objects are
+                    // visited in array order and the first match for a key wins.
+                    if (o.id != null && !m.has(o.id)) m.set(o.id, o);
+                    const tk = 'tab:' + (o.external_id || '');
+                    if (!m.has(tk)) m.set(tk, o);
+                }
+                _objIndex = m;
+            }
+            return _objIndex;
+        }
+        const byId = id => {
+            if (id === undefined || id === null) {
+                return W.objects.find(o => o.id === id || 'tab:' + (o.external_id || '') === id);
+            }
+            return objIndex().get(id);
+        };
+        const nodePos = id => (window.NodePos || {})[id];
+
+        // ============ render scheduling ============
+        let renderTimer = null;
+        function scheduleRender() {
+            if (renderTimer) return;
+            renderTimer = setTimeout(() => { renderTimer = null; renderWorld(); }, 250);
+        }
+        function firstReady() {
+            W.ready = true;
+            $('conn-line').textContent = 'Core data received';
+            $('conn-line').className = '';
+            refit();
+            renderWorld();
+            renderNavCounters();
+            renderFooter();
+            renderSidebar();
+        }
+        function W_mode() { return W.mode; }
+
+        function setMode(m) {
+            W.mode = m;
+            ['space', 'tree', 'graph', 'focus'].forEach(k => $('m-' + k).classList.toggle('active', k === m));
+            if (m === 'focus' && !W.selObj) { /* pick latest object to focus */ const o = W.objects.filter(x => !isTerminal(missionStateOf(x.id)) && (x.type === 'Mission')).sort((a, b) => cmpTime(b, a))[0] || W.objects[0]; if (o) W.selObj = o.id; }
+            smooth(() => { Z.s = Z.fit; Z.x = 0; Z.y = 0; refit(); }); // each view starts at its base scale
+            renderWorld();
+            // Tree and a single-object Focus need the existing Cluster level to
+            // be readable; Space and Graph retain their whole-world overview.
+            if (m === 'tree' || m === 'focus') preset('cluster');
+        }
+        // Object timestamps are parsed once per object instead of twice per
+        // comparison. WeakMap keeps this a pure cache: Core objects are never
+        // mutated. Equivalent to `new Date(a) - new Date(b)` for every input
+        // (including invalid dates, which yield NaN in both forms).
+        const _tsCache = new WeakMap();
+        const objTime = o => {
+            let t = _tsCache.get(o);
+            if (t === undefined) {
+                const s = o.updated_at || o.created_at || 0;
+                t = typeof s === 'number' ? s : Date.parse(s);
+                _tsCache.set(o, t);
+            }
+            return t;
+        };
+        const cmpTime = (a, b) => objTime(a) - objTime(b);
+
+        const NAV2CL = { world: null, files: 'Files', web: 'Web', missions: 'Mission',
+            agents: 'Agents', projects: 'Projects', events: 'Events', system: 'System' };
+        function navGo(name) {
+            document.querySelectorAll('.nav-it').forEach(n => n.classList.toggle('active', n.dataset.nav === name));
+            W.nav = name;
+            if (name === 'world') { W.selCluster = null; W.selObj = null; setMode('space'); preset('world'); return; }
+            const cl = NAV2CL[name] || 'Events';
+            W.selCluster = cl; W.selObj = null;
+            setMode('space');
+            selectCluster(cl, false);
+            preset('cluster');
+            renderSidebar();
+        }
+        // ============ starfield (built once) ============
+        let STARS_HTML = '';
+        function buildStars() {
+            const mk = n => {
+                let s = [];
+                for (let i = 0; i < n; i++) {
+                    const x = (Math.random() * 2800 - 1400).toFixed(0);
+                    const y = (Math.random() * 1800 - 900).toFixed(0);
+                    s.push(x + 'px ' + y + 'px #fff');
+                }
+                return 'box-shadow:' + s.join(',') + ';';
+            };
+            STARS_HTML = '<div class="wstar" style="left:-1400px;top:-900px;width:1px;height:1px;opacity:.5;' + mk(200) + '"></div>'
+                + '<div class="wstar" style="left:-1400px;top:-900px;width:1px;height:1px;opacity:.28;' + mk(160) + '"></div>';
+        }
+
+        // ============ world rendering ============
+        window.NodePos = {};
+        // Cluster membership cache. Invalidated by the identity of W.objects,
+        // so a fresh Core snapshot transparently rebuilds it. Callers only
+        // read (slice/filter/forEach), so the cached arrays are never mutated.
+        let _memberRef = null, _memberCache = null;
+        function memberObjs(cl) {
+            if (_memberRef !== W.objects) { _memberRef = W.objects; _memberCache = {}; }
+            const hit = _memberCache[cl];
+            if (hit) return hit;
+            let list = W.objects.filter(o => clusterOf(o) === cl);
+            if (cl === 'System') list = W.objects.filter(o => TYPES.System(o.type));
+            list.sort((a, b) => cmpTime(b, a));   // newest first (unchanged ordering)
+            _memberCache[cl] = list;
+            return list;
+        }
+        function tabObjs() {
+            // Persisted representations use Core identities only. Live CDP rows
+            // never synthesize tab:<target> objects or replace creation snapshots.
+            return memberObjs('Web').filter(o => o.type === 'BrowserTab');
+        }
+        function browserLiveTarget(o, rows = W.tabs || []) {
+            const p = o && o.properties;
+            if (!p || o.type !== 'BrowserTab' || o.provider_id !== 'browser'
+                || !String(o.id).startsWith('browser-tab-v1-') || !p.target_id
+                || !p.source_id || !p.runtime_epoch || !p.instance_id || !p.world_id) return null;
+            // The exact canonical tab_id binds source/instance/epoch in the v1
+            // Core identity. Raw target alone (or hashed external_id) is not a join.
+            // This is a UI mapping, never a replacement for signed Core authorization.
+            const matches = rows.filter(t => t.tab_id === o.id && t.target_id === p.target_id
+                && ['source_id', 'runtime_epoch', 'instance_id', 'world_id'].every(k => (!W.browserScoped && t[k] == null) || t[k] === p[k]));
+            return matches.length === 1 ? matches[0].target_id : null;
+        }
+        function openBrowserObject(id, activate = false) {
+            if (!canBrowser(activate ? 'activate_tab' : 'screenshot')) { toast('Browser action unavailable or authority not loaded', true); return; }
+            const target = browserLiveTarget(byId(id));
+            if (!target) { toast('No matching live browser authority for this Core snapshot', true); return; }
+            if (activate) activateTab(target); else openBrowser(target, id);
+        }
+        function clusterCounts(cl) {
+            const objs = memberObjs(cl);
+            const byType = {};
+            objs.forEach(o => { byType[o.type] = (byType[o.type] || 0) + 1; });
+            return { objs, byType, total: objs.length };
+        }
+        function focusPickDefault() {
+            const m = W.objects.filter(o => o.type === 'Mission' && !isTerminal(missionStateOf(o.id)));
+            if (m.length) return m[0];
+            const any = W.objects[0];
+            return any || null;
+        }
+
+        function renderWorld() {
+            const el = world(), vpEl = vp();
+            window.NodePos = {};
+            if (W.selObj && !byId(W.selObj) && !String(W.selObj).startsWith('tab:')) W.selObj = null;
+            const mode = W.mode;
+            if (mode === 'space') renderSpace(el);
+            else if (mode === 'tree') renderTreeMode(el);
+            else if (mode === 'graph') renderGraphMode(el);
+            else renderFocusMode(el);
+            const gl = $('glegend');
+            if (gl) gl.style.display = (mode === 'graph' && gl.innerHTML) ? 'flex' : 'none';
+        }
+
+        function spokesAndStars(extraEdges) {
+            let defs = '', glow = '', paths = '';
+            for (const name in CL) {
+                const p = clPos(name);
+                const mx = p.x / 2, my = p.y / 2;
+                const dx = p.x - 6, dy = p.y + 10, len = Math.sqrt(dx * dx + dy * dy) || 1;
+                const nx = -dy / len * 40, ny = dx / len * 40;
+                const d = 'M ' + (nx * .35) + ' ' + (ny * .35 + 12) + ' Q ' + (mx + nx) + ' ' + (my + ny) + ' ' + p.x + ' ' + p.y;
+                const gid = 'g-' + name, col = CL[name].col;
+                // light trail: core blue fading into the cluster colour
+                defs += '<linearGradient id="' + gid + '" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="' + p.x + '" y2="' + p.y + '">'
+                    + '<stop offset="0" stop-color="#7dd3fc" stop-opacity=".5"/>'
+                    + '<stop offset=".55" stop-color="' + col + '" stop-opacity=".3"/>'
+                    + '<stop offset="1" stop-color="' + col + '" stop-opacity=".05"/></linearGradient>';
+                glow += '<path d="' + d + '" stroke="url(#' + gid + ')" stroke-width="4.5" stroke-opacity=".16" fill="none" stroke-linecap="round"/>';
+                paths += '<path d="' + d + '" stroke="url(#' + gid + ')" stroke-width="1.4" fill="none" stroke-linecap="round"/>';
+            }
+            return '<svg id="edges" viewBox="-1400 -900 2800 1800"><defs>' + defs + '</defs>' + glow + paths + (extraEdges || '') + '</svg>';
+        }
+        function coreNodeHtml() {
+            return '<div class="core-node" onclick="navGo(\'world\')">'
+                + '<div class="core-orb">◉<span class="orbit o1"><i></i></span><span class="orbit o2"><i></i></span></div>'
+                + '<div class="core-name">Core SpaceOS</div>'
+                + '<div class="core-sub">' + esc(W.objects.length) + ' objects · ' + esc(W.relations.length) + ' relations · ' + esc(W.events.length) + ' events</div>'
+                + '</div>';
+        }
+        function miniNodesHtml(cl, cx, cy, list) {
+            let h = '';
+            const ccol = CL[cl].col;
+            (list || []).forEach((o, i) => {
+                if (window.NodePos[o.id]) return;
+                const base = hash(o.id) % 360;
+                const ring = i < 5 ? 150 : 236;
+                const ang = (base + i * 47) * Math.PI / 180;
+                const x = cx + Math.cos(ang) * ring * 1.24;
+                const y = cy + Math.sin(ang) * ring * 0.82;
+                window.NodePos[o.id] = { x: x, y: y };
+                const nm = o.title ? esc(trunc(o.title, 30)) : esc(trunc(objName(o), 30));
+                h += '<div class="mininode" style="left:' + x.toFixed(0) + 'px;top:' + y.toFixed(0) + 'px;--c:' + ccol
+                    + '" data-oid="' + esc(o.id) + '" data-action="selectObj" data-target="' + esc(o.id) + '" data-open="true">'
+                    + '<div class="mn-orb">' + typeIcon(o.type) + '</div>'
+                    + '<div class="mn-name">' + nm + '</div></div>';
+            });
+            return h;
+        }
+        function cRow(icon, name, val, action, target, color) {
+            return '<div class="c-row"' + (action ? ' data-action="' + action + '" data-target="' + esc(target) + '"' : '') + '>'
+                + '<span class="ci"' + (color ? ' style="color:' + color + '"' : '') + '>' + icon + '</span>'
+                + '<span class="cn">' + esc(trunc(name, 22)) + '</span>'
+                + '<span class="cv">' + esc(val == null ? '' : val) + '</span></div>';
+        }
+        function clusterHtml(name) {
+            const cfg = CL[name];
+            const p = clPos(name);
+            window.NodePos[name] = { x: p.x, y: p.y };
+            const cc = clusterCounts(name);
+            const accent = W.selCluster === name ? 'outline: 1px solid ' + cfg.col + '; outline-offset: 5px;' : '';
+            let rows = '';
+            let subs = '';
+            if (name === 'Events') {
+                subs = 'last ' + Math.min(W.events.length, 50) + ' from Core';
+                W.events.slice(0, 3).forEach(e => {
+                    const et = e.event_type || '?';
+                    const col = et === 'ActionCompleted' ? 'var(--green)' : (et === 'ActionFailed' || et === 'ActionDenied') ? 'var(--red)' : '#7dd3fc';
+                    rows += cRow('●', et.replace(/^Action/, ''), fmtTime(e.timestamp), null, col);
+                });
+            } else if (name === 'Files') {
+                const t = cc.byType;
+                subs = (t.File || 0) + ' files · ' + (t.Directory || 0) + ' directories';
+                rows += cRow('📄', 'Files', t.File || 0);
+                rows += cRow('📁', 'Directories', t.Directory || 0);
+                memberObjs('Files').slice(0, 2).forEach(o => {
+                    rows += cRow(typeIcon(o.type), nameFor(o), fmtTime(o.updated_at), 'selectObj', o.id, null);
+                });
+            } else if (name === 'Web') {
+                const n = cc.byType.BrowserTab || 0;
+                subs = 'tabs: ' + n;
+                rows += cRow('🪐', 'CDP tabs', (W.tabs || []).length, 'openBrowser()');
+                tabObjs().slice(0, 3).forEach(t => {
+                    const host = (t.properties.url || '').replace(/^https?:\/\//, '').split('/')[0] || '—';
+                    rows += cRow('🌐', objName(t), host, 'selectObj', t.id);
+                });
+                if (!(W.tabs || []).length && !cc.byType.BrowserTab) rows += cRow('·', 'No CDP tabs', '');
+            } else if (name === 'Mission') {
+                const live = W.objects.filter(o => o.type === 'Mission' && !isTerminal(missionStateOf(o.id)));
+                const stc = {};
+                (W.missions || []).forEach(m => { stc[m.state] = (stc[m.state] || 0) + 1; });
+                subs = live.length + ' active of ' + (W.missions || []).length;
+                Object.keys(stc).slice(0, 4).forEach(s => {
+                    rows += cRow('●', s, stc[s], null, stateColor(s));
+                });
+            } else if (name === 'Agents') {
+                const byActor = {};
+                (W.actions || []).forEach(r => { if (r.actor) byActor[r.actor] = (byActor[r.actor] || 0) + 1; });
+                const actors = Object.keys(byActor);
+                subs = actors.length + ' actors in history';
+                actors.slice(0, 4).forEach(a => { rows += cRow('●', a, byActor[a], null, 'var(--green)'); });
+            } else if (name === 'Projects') {
+                subs = Object.keys(cc.byType).sort().map(k => cc.byType[k] + ' ' + k).join(' · ') || 'knowledge domains';
+                Object.keys(cc.byType).sort().slice(0, 3).forEach(k => { rows += cRow(typeIcon(k), k, cc.byType[k]); });
+                memberObjs('Projects').slice(0, 1).forEach(o => {
+                    rows += cRow(typeIcon(o.type), nameFor(o), fmtTime(o.updated_at), 'selectObj', o.id);
+                });
+            } else if (name === 'System') {
+                const comps = W.components || {};
+                const names = Object.keys(comps);
+                const ok = names.filter(k => comps[k] && comps[k].connected).length;
+                subs = ok + '/' + names.length + ' components online';
+                names.slice(0, 4).forEach(k => {
+                    const on = comps[k] && comps[k].connected;
+                    rows += cRow(on ? '✔' : '✘', k, on ? 'online' : 'offline', null, on ? 'var(--green)' : 'var(--red)');
+                });
+            }
+            return '<div class="cluster" style="left:' + p.x.toFixed(0) + 'px;top:' + p.y.toFixed(0) + 'px;--c:' + cfg.col + ';' + accent
+                + '" data-action="selectCluster" data-target="' + esc(name) + '" data-open="false">'
+                + '<div class="c-island"></div><div class="c-orb">' + cfg.icon + '</div>'
+                + '<div class="c-name">' + cfg.label + '</div>'
+                + '<div class="c-sub">' + esc(trunc(subs, 46)) + '</div>'
+                + '<div class="c-list">' + rows + '</div>'
+                + '</div>';
+        }
+
+        function bubblesHtml() {
+            const out = [];
+            const lastAct = (W.actions || [])[0];
+            if (lastAct) {
+                const st = String(lastAct.status || '');
+                out.push({ x: -900, y: 396, icon: '⚙️',
+                    t: (lastAct.actor || '?') + ' — ' + (lastAct.operation || '?'),
+                    s: st || 'in history', col: st === 'Completed' ? 'var(--green)' : (st === 'Failed' || st === 'Denied') ? 'var(--red)' : 'var(--amber)' });
+            }
+            const lm = (W.missions || []).find(m => String(m.state).toLowerCase() === 'running')
+                || (W.missions || []).find(m => !isTerminal(m.state));
+            if (lm) out.push({ x: 900, y: -430, icon: '🎯', t: trunc(lm.goal || lm.mission_id, 34),
+                s: 'Mission · ' + (lm.state || '?'), col: stateColor(lm.state) });
+            const wsOn = ws && ws.readyState === 1;
+            out.push({ x: 930, y: 452, icon: wsOn ? '🛰' : '📡', t: 'Core', s: wsOn ? 'WebSocket: live' : 'polling: live', col: wsOn ? 'var(--green)' : 'var(--amber)' });
+            return out.map(b => '<div class="bubble" style="left:' + b.x + 'px;top:' + b.y + 'px;--c:' + b.col + '">'
+                + '<span class="bi">' + b.icon + '</span><span class="bt"><b>' + esc(trunc(b.t, 34)) + '</b><small>' + esc(b.s) + '</small></span></div>').join('');
+        }
+        function renderSpace(el) {
+            let minis = '';
+            minis += miniNodesHtml('Files', clPos('Files').x, clPos('Files').y, memberObjs('Files').slice(0, 6));
+            minis += miniNodesHtml('Mission', clPos('Mission').x, clPos('Mission').y,
+                W.objects.filter(o => o.type === 'Mission' && !isTerminal(missionStateOf(o.id))).slice(0, 5));
+            minis += miniNodesHtml('Projects', clPos('Projects').x, clPos('Projects').y, memberObjs('Projects').slice(0, 4));
+            const tabsAll = tabObjs();
+            minis += miniNodesHtml('Web', clPos('Web').x, clPos('Web').y, (tabsAll.length ? tabsAll : memberObjs('Web')).slice(0, 4));
+            el.innerHTML = STARS_HTML + spokesAndStars('') + coreNodeHtml()
+                + Object.keys(CL).map(clusterHtml).join('') + minis + bubblesHtml();
+        }
+
+        // ---- tree mode ----
+        function tline(label, oid, icon, extra) {
+            return '<div class="titem" ' + (oid ? 'data-action="selectObj" data-target="' + esc(oid) + '" data-open="true"' : '') + '>'
+                + (icon || '') + '<span>' + esc(trunc(label, 44)) + '</span>' + (extra ? '<span class="dots" style="margin-left:auto">' + esc(extra) + '</span>' : '') + '</div>';
+        }
+        function renderTreeMode(el) {
+            const cols = [];
+            for (const name in CL) {
+                const cfg = CL[name]; let items = ''; let n = 0; let more = '';
+                if (name === 'Files') {
+                    const files = memberObjs('Files').filter(o => o.type === 'File');
+                    const dirs = memberObjs('Files').filter(o => o.type === 'Directory');
+                    items = tline(dirs.length + ' directories', dirs[0] && dirs[0].id, '<span>📁</span>', 'root')
+                        + files.slice(0, 12).map(o => tline(objName(o), o.id, '<span>' + typeIcon('File') + '</span>', fmtTime(o.updated_at))).join('');
+                    if (files.length > 12) more = 'first 12 of ' + files.length + ' (by update)';
+                    n = files.length + dirs.length;
+                } else if (name === 'Web') {
+                    const t = tabObjs();
+                    items = t.slice(0, 8).map(tb => tline(objName(tb), tb.id, '<span>🌐</span>')).join('');
+                    if (!t.length) items = '<div class="titem dots">No persisted Browser tabs</div>';
+                    n = t.length;
+                } else if (name === 'Mission') {
+                    const ms = memberObjs('Mission').filter(o => o.type === 'Mission');
+                    const live = ms.filter(o => !isTerminal(missionStateOf(o.id)));
+                    items = live.slice(0, 10).map(o => tline(trunc((o.properties && o.properties.goal) || objName(o), 30), o.id,
+                        '<span>' + typeIcon('Mission') + '</span>', missionStateOf(o.id) || '')).join('');
+                    if (!items) items = '<div class="titem dots">No active Mission</div>';
+                    n = live.length;
+                } else if (name === 'Agents') {
+                    const acts = [...new Set((W.actions || []).map(r => r.actor))].filter(Boolean);
+                    items = acts.slice(0, 8).map(a => tline(a, null, '<span>●</span>', 'actor')).join('');
+                    n = acts.length;
+                } else if (name === 'Events') {
+                    items = W.events.slice(0, 8).map(e => {
+                        const et = e.event_type || '?';
+                        const col = et === 'ActionCompleted' ? 'var(--green)' : (et === 'ActionFailed' || et === 'ActionDenied') ? 'var(--red)' : '#7dd3fc';
+                        return tline(et + ' · ' + fmtTime(e.timestamp), null, '<span style="color:' + col + '">●</span>', e.actor);
+                    }).join('');
+                    n = W.events.length;
+                } else if (name === 'Projects') {
+                    const p = memberObjs('Projects');
+                    items = p.slice(0, 10).map(o => tline(objName(o), o.id, '<span>' + typeIcon(o.type) + '</span>', o.type)).join('');
+                    if (!items) items = '<div class="titem dots">Empty</div>';
+                    n = p.length;
+                } else if (name === 'System') {
+                    const comps = W.components || {};
+                    items = Object.keys(comps).map(k => tline(k, null, '<span style="color:' + (comps[k].connected ? 'var(--green)' : 'var(--red)') + '">●</span>', comps[k].connected ? 'online' : 'offline')).join('');
+                    if (W.roots && W.roots.length) items += tline('roots: ' + W.roots.map(r => trimRoot(r)).join(' ; '), null, '<span>🔒</span>');
+                } else continue;
+                const sel = W.selCluster === name ? 'outline:1px solid ' + cfg.col + ';outline-offset:3px;' : '';
+                cols.push('<div class="tcol" data-action="selectCluster" data-target="' + esc(name) + '" data-open="false">'
+                    + '<div class="thead" style="--c:' + cfg.col + '"><span>' + cfg.icon + '</span> ' + cfg.label + '<small>' + (n || '') + '</small></div>'
+                    + '<div class="tlist">' + items + '</div>' + (more ? '<div class="c-sub" style="margin-top:6px">' + esc(more) + '</div>' : '')
+                    + '</div>');
+            }
+            el.innerHTML = '<div class="tree-wrap">'
+                + '<div class="troot" onclick="navGo(\'world\')"><div class="t-orb">◉</div><span>Core SpaceOS · ' + esc(W.objects.length) + ' objects</span></div>'
+                + '<div class="trow">' + cols.join('') + '</div>'
+                + '</div>';
+        }
+
+        // ---- graph mode (real relation edges) ----
+        function updateLegend(colors, counts) {
+            const gl = $('glegend');
+            if (!gl) return;
+            gl.innerHTML = Object.keys(colors).slice(0, 8).map(t =>
+                '<span class="lg"><i style="background:' + colors[t] + '"></i>' + esc(t) + ' <b>' + (counts[t] || 0) + '</b></span>').join('');
+        }
+        // Bounded relation selection for the graph projection.
+        // The previous implementation sorted every relation with
+        // String.localeCompare just to keep the top 70, which dominated graph
+        // render cost at high relation counts. This performs the same
+        // selection (related_to first, then newest first) with a bounded
+        // top-k insertion instead of a full sort.
+        //
+        // Ordering equivalence with the previous full sort is preserved:
+        //  - a cached Intl.Collator yields the same sign as
+        //    String.prototype.localeCompare for the same pair;
+        //  - ties keep the earlier relation (stable), matching
+        //    Array.prototype.sort stability.
+        const _relCollator = new Intl.Collator();
+        const relRank = (a, b) => {
+            const ra = a.relation_type === 'related_to' ? 1 : 0;
+            const rb = b.relation_type === 'related_to' ? 1 : 0;
+            if (ra !== rb) return rb - ra;
+            return _relCollator.compare(String(b.created_at || ''), String(a.created_at || ''));
+        };
+        function topRelations(list, k) {
+            const best = [];
+            for (let i = 0; i < list.length; i++) {
+                const r = list[i];
+                if (best.length === k) {
+                    // Only displace the current worst when the candidate ranks
+                    // strictly before it; equal ranks keep the earlier element.
+                    if (relRank(r, best[k - 1]) >= 0) continue;
+                    best.pop();
+                }
+                let lo = 0, hi = best.length;
+                while (lo < hi) {
+                    const mid = (lo + hi) >> 1;
+                    if (relRank(best[mid], r) <= 0) lo = mid + 1; else hi = mid;
+                }
+                best.splice(lo, 0, r);
+            }
+            return best;
+        }
+        function renderGraphMode(el) {
+            const deg = {};
+            W.relations.forEach(r => {
+                deg[r.source_object_id] = (deg[r.source_object_id] || 0) + 1;
+                deg[r.target_object_id] = (deg[r.target_object_id] || 0) + 1;
+            });
+            const palette = ['#38bdf8', '#a78bfa', '#34d399', '#f59e0b', '#f87171', '#60a5fa', '#f472b6'];
+            const relColors = {}, relCounts = {};
+            W.relations.forEach(r => { relCounts[r.relation_type] = (relCounts[r.relation_type] || 0) + 1; });
+            const relColor = t => {
+                if (!(t in relColors)) relColors[t] = palette[Object.keys(relColors).length % palette.length];
+                return relColors[t];
+            };
+            // Keep newly created user links visible even when legacy graphs
+            // already fill the bounded overview.
+            const relsTop = topRelations(W.relations, 70);
+            const seen = new Set();
+            const shown = [];
+            const pushObj = id => {
+                if (seen.has(id) || shown.length >= 30) return;
+                const o = byId(id); if (!o) return;
+                seen.add(id); shown.push(o);
+            };
+            relsTop.forEach(r => { pushObj(r.source_object_id); pushObj(r.target_object_id); });
+            if (shown.length < 12) {
+                // Intentional bounded overview: unrelated Web snapshots are
+                // available in Tree/Space/Focus, not silently added to Graph.
+                for (const cl of ['Mission', 'Files', 'Projects']) {
+                    memberObjs(cl).slice(0, 6).forEach(o => pushObj(o.id));
+                }
+            }
+            const ids = new Set(shown.map(o => o.id));
+            shown.forEach(o => {
+                const cl = clusterOf(o);
+                const cfg = CL[cl];
+                const p = clPos(cl);
+                const base = hash(o.id) % 360;
+                const ring = 150 + (deg[o.id] || 0) * 12;
+                const ang = (base + 90) * Math.PI / 180;
+                const x = p.x + Math.cos(ang) * ring * 0.8;
+                const y = p.y + Math.sin(ang) * ring * 0.62;
+                window.NodePos[o.id] = { x: x, y: y };
+            });
+            let edgesHtml = ''; let li = 0;
+            relsTop.forEach(r => {
+                if (!ids.has(r.source_object_id) || !ids.has(r.target_object_id) || li > 70) return;
+                const a = window.NodePos[r.source_object_id], b = window.NodePos[r.target_object_id];
+                if (!a || !b) return;
+                const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+                const dx = b.x - a.x, dy = b.y - a.y, ln = Math.sqrt(dx * dx + dy * dy) || 1;
+                const nx = -dy / ln * 30, ny = dx / ln * 30;
+                const col = relColor(r.relation_type);
+                edgesHtml += '<path class="rel-edge' + (li > 18 ? ' dim' : '') + '" style="stroke:' + col + ';stroke-opacity:' + (li > 18 ? .22 : .6) + '" d="M ' + a.x.toFixed(0) + ' ' + a.y.toFixed(0) + ' Q ' + (mx + nx).toFixed(0) + ' ' + (my + ny).toFixed(0) + ' ' + b.x.toFixed(0) + ' ' + b.y.toFixed(0) + '"><title>' +
+                    esc(r.relation_type) + '</title></path>';
+                li++;
+            });
+            const nodes = shown.map(o => {
+                const p = window.NodePos[o.id];
+                const cfg = CL[clusterOf(o)];
+                const d = deg[o.id] || 0;
+                const halo = d >= 5 ? 'box-shadow:0 0 30px color-mix(in srgb, var(--c) 70%, transparent);' : '';
+                return '<div class="gnode" style="left:' + p.x.toFixed(0) + 'px;top:' + p.y.toFixed(0) + 'px;--c:' + cfg.col + '" data-oid="' + esc(o.id) + '" data-action="selectObj" data-target="' + esc(o.id) + '" data-open="true">'
+                    + '<div class="gn-orb" style="' + halo + '">' + typeIcon(o.type) + '</div>'
+                    + '<div class="gn-name">' + esc(trunc(objName(o), 26)) + '</div>'
+                    + '<div class="gn-cnt">' + esc(d + ' conn.') + '</div></div>';
+            }).join('');
+            el.innerHTML = STARS_HTML + spokesAndStars(edgesHtml) + coreNodeHtml()
+                + Object.keys(CL).filter(k => k !== 'Events' && k !== 'System').map(clusterHtml).join('') + nodes;
+            updateLegend(relColors, relCounts);
+        }
+
+        // ---- focus mode ----
+        // Maximum number of distinct relation types shown in one aggregate label.
+        // The complete list always stays in e.labels — nothing is discarded —
+        // but the rendered label is bounded so a pair carrying thousands of
+        // distinct relation types cannot inject a huge string into the DOM
+        // (chip title attribute + focus SVG <title>) and slow every render.
+        const REL_LABEL_MAX = 6;
+        const relLabel = labels => {
+            if (labels.length <= REL_LABEL_MAX) return labels.join(', ');
+            return labels.slice(0, REL_LABEL_MAX).join(', ') + ' +' + (labels.length - REL_LABEL_MAX) + ' more';
+        };
+        function relatedOf(id) {
+            const out = [];
+            const index = new Map();
+            W.relations.forEach(r => {
+                let other = null, rel = r.relation_type;
+                if (r.source_object_id === id) other = r.target_object_id;
+                else if (r.target_object_id === id) { other = r.source_object_id; rel = '← ' + r.relation_type; }
+                if (!other || other === id) return;
+                const e = index.get(other);
+                if (!e) {
+                    // First relation to this object defines the primary label.
+                    const ne = { id: other, rel: rel, labels: [rel] };
+                    ne.short = rel;
+                    ne.seen = new Set([rel]);   // O(1) membership, labels stays ordered
+                    index.set(other, ne);
+                    out.push(ne);
+                } else if (!e.seen.has(rel)) {
+                    // Additional relation types between the same pair are kept
+                    // instead of being dropped. The reverse direction is marked
+                    // with a leading '←' so the marker stays visible even when
+                    // the aggregate label is truncated for display.
+                    e.labels.push(rel);
+                    e.seen.add(rel);
+                    e.rel = relLabel(e.labels);
+                    e.short = e.labels[0] + ' +' + (e.labels.length - 1);
+                }
+            });
+            return out;
+        }
+        function renderFocusMode(el) {
+            const oid = W.selObj || (focusPickDefault() || {}).id;
+            const o = oid && (byId(oid) || tabObjs().find(t => t.id === oid));
+            if (!o) { el.innerHTML = STARS_HTML + '<pre style="color:#64748b;position:absolute;left:0;top:0;transform:translate(-50%,-50%)">No Core data</pre>'; return; }
+            W.selObj = o.id;
+            window.NodePos[o.id] = { x: 0, y: 0 };
+            const rel = relatedOf(o.id);
+            let sHtml = '', edHtml = '';
+            const sats = rel.slice(0, 12);
+            sats.forEach((r, i) => {
+                const so = byId(r.id);
+                if (!so) return;
+                if (window.NodePos[so.id]) return;
+                const base = hash(so.id) % 360;
+                const ring = i < 6 ? 310 : 480;
+                const ang = (base + i * 33) * Math.PI / 180;
+                const x = Math.cos(ang) * ring, y = Math.sin(ang) * ring * 0.74;
+                window.NodePos[so.id] = { x: x, y: y };
+                sHtml += '<div class="gnode" style="left:' + x.toFixed(0) + 'px;top:' + y.toFixed(0) + 'px;--c:' + CL[clusterOf(so)].col + '" data-action="selectObj" data-target="' + esc(so.id) + '" data-open="true">'
+                    + '<div class="gn-orb">' + typeIcon(so.type) + '</div><div class="gn-name">' + esc(trunc(objName(so), 24)) + '</div>'
+                    + '<div class="gn-rel">' + esc(trunc(r.short || r.rel, 20)) + '</div></div>';
+                edHtml += '<path class="fedge" d="M 0 0 Q ' + (x / 2).toFixed(0) + ' ' + (y / 2 + 18).toFixed(0) + ' ' + x.toFixed(0) + ' ' + y.toFixed(0) + '"><title>' + esc(r.rel) + '</title></path>';
+            });
+            const st = missionStateOf(o.id);
+            const card = '<div class="focus-card">'
+                + '<div class="fheader"><h3>' + (String(o.id).startsWith('tab:') ? '🌐 ' + esc(trunc(o.title || 'Tab', 34)) : typeIcon(o.type) + ' ' + esc(trunc(objName(o), 40))) + '</h3></div>'
+                + '<div class="fsub">' + esc(o.type) + (st ? ' · ' + esc(st) : '') + ' · ' + esc((CL[clusterOf(o)] || {}).label || '') + '</div>'
+                + '<div class="fsection"><div class="fsec-title">Metadata</div>'
+                + '<div class="row"><b>updated</b><span>' + esc(fmtWhen(o.updated_at || o.created_at)) + '</span></div>'
+                + '<div class="row"><b>ID</b><span>' + esc(String(o.id).slice(0, 13)) + '…</span></div>'
+                + '<div class="row"><b>connections</b><span>' + rel.length + '</span></div></div>'
+                + '<div class="fsection"><div class="fsec-title">Related objects</div>'
+                + (rel.length ? sats.slice(0, 6).map(r => {
+                    const so = byId(r.id);
+                    const oo = so || { id: r.id, type: '' };
+                    const short = r.short || r.rel;
+                    return '<span class="chip" data-action="selectObj" data-target="' + esc(r.id) + '" data-open="true" title="' + esc(r.rel) + '">'
+                        + typeIcon(so ? so.type : '') + ' ' + esc(trunc(objName(oo), 16))
+                        + (short ? ' <span class="rel-tag">' + esc(trunc(short, 20)) + '</span>' : '') + '</span>';
+                }).join('') : '<span class="chip">No connections for object</span>')
+                + '</div>'
+                + '<div class="fsection fpermissions"><div class="fsec-title">Permissions</div><div class="perm"><span class="ic">🔒</span><span>All data — from Core via API/WS; UI does not change state without your explicit actions</span></div></div>'
+                + '<div class="fsection"><div class="fsec-title">Quick actions</div><div class="ftools">' + (W.selCluster ? '<span onclick="navGo(\'world\')">World</span> ' : '') + '<span onclick="relatedGraph()">Graph</span> <span onclick="quickSearch(\'\')">Search</span></div></div>'
+                + '</div>';
+            el.innerHTML = STARS_HTML + '<svg id="edges" viewBox="-1400 -900 2800 1800">' + edHtml + '</svg>' + card + sHtml;
+        }
+
+        // ============ selection ============
+        function selectObj(id, openFocus) {
+            const o = byId(id) || tabObjs().find(t => t.id === id);
+            if (!o) return;
+            W.selObj = id;
+            W.selCluster = clusterOf(o);
+            if (openFocus) {
+                W.mode = 'focus';
+                ['space', 'tree', 'graph', 'focus'].forEach(k => $('m-' + k).classList.toggle('active', k === 'focus'));
+                refit(); renderWorld(); renderSidebar(); preset('detail');
+            } else {
+                renderWorld(); renderSidebar();
+            }
+        }
+        function selectCluster(name, zoom) {
+            W.selCluster = name; W.selObj = null;
+            if (W.mode === 'focus') {
+                W.mode = 'space';
+                $('m-focus').classList.remove('active'); $('m-space').classList.add('active');
+            }
+            if (zoom !== false) preset('cluster'); else { renderWorld(); }
+            renderSidebar();
+        }
+
+        // Delegated click handler for dynamic object IDs.
+        // Inline onclick handlers with dynamic IDs embedded in JS string literals are
+        // unsafe: HTML escaping (esc()) does not protect against breaking out of a
+        // single-quoted JS string. Instead, target IDs are stored in data-* attributes
+        // (HTML context, where esc() is sufficient) and dispatched here via DOM binding.
+        function handleDelegatedClick(e) {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const action = btn.getAttribute('data-action');
+            const target = btn.getAttribute('data-target');
+            const open = btn.getAttribute('data-open');
+            const shouldHideDrop = btn.getAttribute('data-hide-drop') === 'true';
+            switch (action) {
+                case 'selectObj':
+                    selectObj(target, open === 'true');
+                    if (shouldHideDrop) hideDrop();
+                    break;
+                case 'selectCluster':
+                    selectCluster(target, open === 'true');
+                    break;
+                case 'readFile':
+                    readFile(target);
+                    break;
+                case 'openBrowser':
+                    openBrowser(target);
+                    break;
+                case 'activateTab':
+                    activateTab(target);
+                    break;
+                case 'openBrowserObject':
+                    openBrowserObject(target);
+                    break;
+                case 'activateBrowserObject':
+                    openBrowserObject(target, true);
+                    break;
+                case 'openSemObjEdit':
+                    openSemObjEdit(target);
+                    break;
+                case 'quickSearch':
+                    quickSearch(target);
+                    break;
+                case 'bfSelect':
+                    bfSelect(target);
+                    break;
+                case 'bfCloseTab':
+                    e.stopPropagation();
+                    bfCloseTab(target);
+                    break;
+            }
+        }
+
+        // ============ sidebar ============
+        function metaRow(k, v) { return '<div class="meta-row"><b>' + esc(k) + '</b><span>' + esc(v == null || v === '' ? '—' : v) + '</span></div>'; }
+        function renderSidebar() {
+            const sb = $('sidebar');
+            if (W.selObj) {
+                const o = byId(W.selObj) || tabObjs().find(t => t.id === W.selObj);
+                if (!o) { W.selObj = null; return renderSidebar(); }
+                const isTab = o.type === 'BrowserTab';
+                const cl = clusterOf(o);
+                const rel = relatedOf(o.id);
+                const st = missionStateOf(o.id);
+                let actions = '';
+                let perms = [];
+                if (o.type === 'File') {
+                    const p = (objPath(o) || '').replace(/\\/g, '\\\\').replace(/'/g, '');
+                    actions = '<button class="act-btn" data-action="readFile" data-target="' + esc(p) + '">📖 Read file</button>';
+                    perms = ['Read — allowed (space-bridge → Core → filesystem)',
+                        'Write — only action.write with conflict stamps',
+                        'Roots boundary: ' + esc(trimRoot(W.roots[0] || ''))];
+                } else if (o.type === 'BrowserTab' || isTab) {
+                    const liveTarget = browserLiveTarget(o);
+                    actions = (liveTarget && canBrowser('screenshot') ? '<button class="act-btn" data-action="openBrowserObject" data-target="' + esc(o.id) + '">🪐 Open in browser (CDP frames)</button>'
+                        + (!canBrowser('activate_tab') ? '' : '<button class="act-btn" data-action="activateBrowserObject" data-target="' + esc(o.id) + '">👁 Show in Chromium</button>')
+                        : '<div class="perm">Core creation snapshot; matching live browser authority unavailable.</div>')
+                        + '<button class="act-btn" onclick="window.open(\'/index.html\', \'_blank\')">⌂ Browser in Shell</button>';
+                    perms = [W.browserScoped ? 'Scoped World Browser — get_tabs + screenshot only; Core authority checks' : 'Navigation — action.navigate (Policy: cap on space-bridge)',
+                        'Frames — action.screenshot, read-only CDP; no input injection',
+                        'No auto-close — only explicit actions with confirmation'];
+                } else if (o.type === 'Mission') {
+                    actions = '<button class="act-btn" onclick="window.open(\'/index.html\', \'_blank\')">🎯 Open Mission in Shell</button>';
+                    if (st) actions += '<div style="font-size:.72rem;color:' + stateColor(st) + ';margin:2px 0 6px">State: ' + esc(st) + '</div>';
+                    perms = ['Transitions — server actor via Core (Policy)',
+                        'complete without passed verification forbidden'];
+                } else {
+                    const isSemanticOwned = o.provider_id === 'space-world-user';
+                    if (isSemanticOwned) {
+                        actions = '<button class="act-btn" data-action="openSemObjEdit" data-target="' + esc(o.id) + '">✎ Edit Semantic Object</button>'
+                            + '<button class="act-btn" onclick="openSemRelCreate()">🔗 Create Relation</button>'
+                            + '<button class="act-btn" onclick="window.open(\'/index.html\', \'_blank\')">🔍 Show in Shell</button>';
+                        perms = ['Semantic-owned object (space-world-user actor)',
+                            'Editable properties via Semantic API',
+                            'Identity/ownership/created_at are immutable'];
+                    } else {
+                        actions = '<button class="act-btn" onclick="window.open(\'/index.html\', \'_blank\')">🔍 Show in Shell (objects)</button>';
+                        perms = ['Domain object Core; changes only via Observation',
+                            'Modifications — based on actor Capability per Policy'];
+                    }
+                }
+                actions += '<button class="act-btn" onclick="relatedGraph()">🕸 Related objects (graph)</button>';
+                const q = objName(o).slice(0, 40).replace(/[\\'"]/g, '');
+                actions += '<button class="act-btn" data-action="quickSearch" data-target="' + esc(q) + '">🔎 Search by name</button>';
+                const relHtml = rel.slice(0, 12).map(r => {
+                    const so = byId(r.id);
+                    if (!so) return '';
+                    return '<div class="rel-item" data-action="selectObj" data-target="' + esc(so.id) + '" data-open="true"><span>' + typeIcon(so.type) + '</span><span>' + esc(trunc(objName(so), 26)) + '</span><span class="t">' + esc(r.rel) + '</span></div>';
+                }).join('') || '<div style="color:var(--dim);font-size:.76rem">No connections for object</div>';
+                sb.innerHTML = '<div class="crumbs">World <span class="sep">/</span> ' + esc((CL[cl] || {}).label || cl) + ' <span class="sep">/</span> <b>' + esc(trunc(o.title || objName(o), 24)) + '</b></div>'
+                    + '<div class="obj-card">'
+                    + '<div class="cover"><span class="cic">' + typeIcon(o.type) + '</span></div>'
+                    + '<h2>' + esc(trunc(o.title || objName(o), 42)) + '</h2>'
+                    + '<div class="sub">' + esc(o.type) + (st ? ' · ' + esc(st) : '') + '</div>'
+                    + (st === 'running' ? '<span class="obadge">Active</span>' : (st && !isTerminal(st) ? '<span class="obadge" style="color:' + stateColor(st) + '">' + esc(st) + '</span>' : ''))
+                    + '</div>'
+                    + '<div class="sec-title">Metadata <span class="r">from Core</span></div>'
+                    + metaRow('Provider', o.provider_id)
+                    + metaRow('External ID', o.external_id)
+                    + metaRow('Created', fmtWhen(o.created_at))
+                    + metaRow('Updated', fmtWhen(o.updated_at))
+                    + metaRow('World', isTab ? o.properties.world_id : o.world_id)
+                    + metaRow('ID', String(o.id).slice(0, 18) + '…')
+                    + (isTab ? metaRow('URL (creation snapshot)', o.properties.url) : '')
+                    + '<div class="sec-title">Related <span class="r">' + rel.length + '</span></div>' + relHtml
+                    + '<div class="sec-title">Actions</div>' + actions
+                    + '<div class="sec-title">Access</div>' + perms.map(p => '<div class="perm"><span class="ic">🔒</span><span>' + esc(p) + '</span></div>').join('')
+                    + '<div class="sec-title">Tools</div>'
+                    + '<div class="tools">'
+                    + '<div class="tool" onclick="document.getElementById(\'q\').focus()"><span class="ic">🔍</span>Search</div>'
+                    + '<div class="tool" onclick="navGo(\'files\')"><span class="ic">📁</span>Files</div>'
+                    + '<div class="tool" onclick="navGo(\'web\')"><span class="ic">🪐</span>Web</div>'
+                    + '<div class="tool" onclick="navGo(\'events\')"><span class="ic">⚡</span>Events</div>'
+                    + '<div class="tool" onclick="window.open(\'/index.html\',\'_blank\')"><span class="ic">⌂</span>Shell</div>'
+                    + '</div>';
+                return;
+            }
+            if (W.selCluster) {
+                const name = W.selCluster, cfg = CL[name], cc = clusterCounts(name);
+                sb.innerHTML = '<div class="crumbs">World <span class="sep">/</span> <b>' + esc(cfg.label) + '</b></div>'
+                    + '<div class="obj-card"><div class="cover"><span class="cic">' + cfg.icon + '</span></div>'
+                    + '<h2>' + esc(cfg.label) + '</h2><div class="sub">SpaceOS space cluster</div>'
+                    + '<span class="obadge">' + esc(cc.total) + ' objects</span></div>'
+                    + '<div class="sec-title">Composition (by type)</div>'
+                    + (Object.keys(cc.byType).sort().map(k => '<div class="meta-row"><b>' + esc(k) + '</b><span>' + cc.byType[k] + '</span></div>').join('') || '<div style="color:var(--dim);font-size:.78rem">Domain without objects</div>')
+                    + '<div class="sec-title">Latest objects</div>'
+                    + (cc.objs.slice(0, 10).map(o => '<div class="rel-item" data-action="selectObj" data-target="' + esc(o.id) + '" data-open="true"><span>' + typeIcon(o.type) + '</span><span>' + esc(trunc(objName(o), 30)) + '</span><span class="t">' + esc(fmtTime(o.updated_at)) + '</span></div>').join('') || '<div style="color:var(--dim);font-size:.78rem">Empty</div>')
+                    + '<div class="sec-title">Actions</div>'
+                    + (name === 'Files' ? '<button class="act-btn" onclick="openFileCreate()">＋ Create file</button>' : '')
+                    + (name === 'Web' ? '<button class="act-btn" onclick="openBrowser()">🪐 Open embedded browser (CDP frames)</button>' : '')
+                    + '<button class="act-btn" onclick="openSemObjCreate()">＋ Create Semantic Object</button>'
+                    + '<button class="act-btn" onclick="preset(\'cluster\')">🔍 Zoom to cluster</button>'
+                    + '<button class="act-btn" onclick="setMode(\'graph\');preset(\'cluster\')">🕸 Cluster relation graph</button>'
+                    + '<div class="sec-title">Tools</div>'
+                    + '<div class="tools">'
+                    + '<div class="tool" onclick="preset(\'cluster\')"><span class="ic">🔍</span>Zoom</div>'
+                    + '<div class="tool" onclick="setMode(\'tree\')"><span class="ic">🌲</span>Tree</div>'
+                    + '<div class="tool" onclick="setMode(\'graph\')"><span class="ic">🕸</span>Graph</div>'
+                    + '<div class="tool" onclick="runScan()"><span class="ic">⏱</span>Scan</div>'
+                    + '<div class="tool" onclick="window.open(\'/index.html\',\'_blank\')"><span class="ic">⌂</span>Shell</div>'
+                    + '</div>';
+                return;
+            }
+            const actorCount = [...new Set((W.actions || []).map(r => r.actor))].filter(Boolean).length;
+            sb.innerHTML = '<div class="crumbs">World <span class="sep">/</span> <b>Core</b></div>'
+                + '<div class="obj-card"><div class="cover"><span class="cic">◉</span></div><h2>Core SpaceOS</h2>'
+                + '<div class="sub">semantic state of the whole system</div>'
+                + '<span class="obadge">SQLite — single source of truth</span></div>'
+                + '<div class="sec-title">World summary</div>'
+                + metaRow('Objects', W.objects.length)
+                + metaRow('Relations', W.relations.length)
+                + metaRow('Events (latest)', W.events.length)
+                + metaRow('Mission (total)', (W.missions || []).length)
+                + metaRow('Actors', actorCount)
+                + '<div class="sec-title">Quick access</div>'
+                + '<div class="rel-item" onclick="navGo(\'files\')"><span>📁</span><span>Files</span><span class="t">' + clusterCounts('Files').total + '</span></div>'
+                + '<div class="rel-item" onclick="navGo(\'web\')"><span>🪐</span><span>Web tabs</span><span class="t">' + tabObjs().length + '</span></div>'
+                + '<div class="rel-item" onclick="navGo(\'missions\')"><span>🎯</span><span>Mission</span><span class="t">' + ((W.missions || []).length) + '</span></div>'
+                + '<div class="rel-item" onclick="navGo(\'projects\')"><span>🗂</span><span>Projects</span><span class="t">' + clusterCounts('Projects').total + '</span></div>'
+                + '<div class="rel-item" onclick="openArch()"><span>▦</span><span>Architecture (ASD-STE100)</span></div>'
+                + '<div class="sec-title">Access</div>'
+                + '<div class="perm"><span class="ic">🔒</span><span>All data — from Core via API/WS; UI does not change state without your explicit actions</span></div>'
+                + '<div class="sec-title">Tools</div>'
+                + '<div class="tools" style="grid-template-columns:repeat(7,1fr)">'
+                + '<div class="tool" onclick="document.getElementById(\'q\').focus()"><span class="ic">🔍</span>Search</div>'
+                + '<div class="tool" onclick="openBrowser()"><span class="ic">🪐</span>Browser</div>'
+                + '<div class="tool" onclick="runScan()"><span class="ic">⏱</span>Scan</div>'
+                + '<div class="tool" onclick="setMode(\'graph\')"><span class="ic">🕸</span>Graph</div>'
+                + '<div class="tool" onclick="openArch()"><span class="ic">▦</span>Arch</div>'
+                + '<div class="tool" onclick="openSemObjCreate()"><span class="ic">＋</span>Semantic Object</div>'
+                + '<div class="tool" onclick="window.open(\'/index.html\',\'_blank\')"><span class="ic">⌂</span>Shell</div>'
+                + '</div>';
+        }
+
+        // ============ footer / ticks ============
+        function renderFooter() {
+            const acts = (W.actions || []).slice(0, 3).map(r =>
+                esc(trunc(r.actor || '?', 12)) + ' — ' + esc(trunc(r.operation || r.status || '?', 16))
+                + ' (' + esc(r.status || '?') + ')');
+            $('ticker').textContent = acts.join('  ·  ') || 'No actions yet';
+            $('recent-chip').innerHTML = W.objects.slice().sort((a, b) => cmpTime(b, a)).slice(0, 4).map(o =>
+                '<span class="chip" data-action="selectObj" data-target="' + esc(o.id) + '" data-open="true">' + typeIcon(o.type) + ' ' + esc(trunc(nameFor(o), 14)) + '</span>').join('');
+            const wsOn = ws && ws.readyState === 1;
+            const stat = (ic, label, val, cls) => '<span class="fstat"><span class="fi">' + ic + '</span>'
+                + '<span class="ftx"><small>' + label + '</small><b class="' + (cls || '') + '">' + val + '</b></span></span>';
+            $('f-net').innerHTML = stat('📶', 'Network', wsOn ? 'WebSocket' : 'polling', wsOn ? 'ok' : 'bad');
+            const comps = W.components || {};
+            const names = Object.keys(comps);
+            const ok = names.filter(k => comps[k] && comps[k].connected).length;
+            $('f-prov').innerHTML = names.length
+                ? stat('🔌', 'Providers', ok + '/' + names.length, ok === names.length ? 'ok' : 'warn')
+                : stat('🔌', 'Providers', '—', 'bad');
+            $('f-roots').innerHTML = (W.roots && W.roots.length)
+                ? stat('🗄', 'Roots', esc(trunc(trimRoot(W.roots[0]), 22)))
+                : stat('🗄', 'Roots', '—', 'warn');
+            const active = (W.missions || []).filter(m => !isTerminal(m.state)).length;
+            $('f-missions').innerHTML = stat('🎯', 'Mission', active + ' active');
+        }
+        function renderNavCounters() {
+            const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
+            set('cnt-files', clusterCounts('Files').total);
+            set('cnt-web', tabObjs().length);
+            set('cnt-missions', (W.missions || []).filter(m => !isTerminal(m.state)).length);
+            set('cnt-agents', [...new Set((W.actions || []).map(r => r.actor))].filter(Boolean).length);
+            set('cnt-projects', clusterCounts('Projects').total);
+        }
+
+        // ============ real actions ============
+        async function readFile(path) {
+            if (!path) { toast('File path not found for object', true); return; }
+            try {
+                const d = await POST('/filesystem/read', { path: path }, 15000);
+                const inner = (d.result && d.result.result) || {};
+                if (inner.status && inner.status !== 'Completed') {
+                    throw new Error('action ' + inner.status + ': ' + JSON.stringify(inner.detail || {}));
+                }
+                const det = inner.detail || {};
+                $('readertitle').textContent = '📄 ' + path;
+                $('readerpre').textContent = (det.content || '').slice(0, 12000)
+                    + (det.content && det.content.length > 12000 ? '\n… (truncated, total ' + det.content.length + ' chars)' : '');
+                $('reader').classList.add('open');
+            } catch (e) { toast('Read failed: ' + trunc(e.message, 120), true); }
+        }
+        function closeReader() { $('reader').classList.remove('open'); }
+
+        const FileCreate = { path: '', observedId: '' };
+        const normWinPath = p => String(trimRoot(p || '')).replace(/\//g, '\\').replace(/\\+$/, '');
+        function pathWithinRoot(path, root) {
+            const p = normWinPath(path).toLowerCase();
+            const r = normWinPath(root).toLowerCase();
+            return !!r && (p === r || p.startsWith(r + '\\'));
+        }
+        function allowedFileDirectories() {
+            const roots = (W.roots || []).map(normWinPath).filter(Boolean);
+            const dirs = W.objects.filter(o => o.type === 'Directory').map(objPath).map(normWinPath)
+                .filter(d => roots.some(r => pathWithinRoot(d, r)));
+            return [...new Set(roots.concat(dirs))].sort((a, b) => a.localeCompare(b));
+        }
+        function setFileCreateStatus(text, cls) {
+            const el = $('filecreate-status');
+            el.textContent = text;
+            el.className = cls || '';
+        }
+        function openFileCreate() {
+            const select = $('filecreate-dir');
+            const previous = select.value;
+            select.replaceChildren();
+            allowedFileDirectories().forEach(dir => {
+                const option = document.createElement('option');
+                option.value = dir; option.textContent = dir;
+                select.appendChild(option);
+            });
+            if (previous && [...select.options].some(o => o.value === previous)) select.value = previous;
+            FileCreate.path = ''; FileCreate.observedId = '';
+            $('filecreate-submit').disabled = !select.options.length;
+            $('filecreate-open').disabled = true;
+            setFileCreateStatus(select.options.length
+                ? 'Select a permitted directory and enter a new file name.'
+                : 'No allowed filesystem roots are available.', select.options.length ? '' : 'err');
+            $('filecreate').classList.add('open');
+            setTimeout(() => $('filecreate-name').focus(), 0);
+        }
+        function closeFileCreate() { $('filecreate').classList.remove('open'); }
+        function fileCreatePath() {
+            const dir = normWinPath($('filecreate-dir').value);
+            const name = $('filecreate-name').value.trim();
+            if (!dir) throw new Error('Select an allowed directory.');
+            if (!name || name === '.' || name === '..' || /[\\/:*?"<>|]/.test(name)) {
+                throw new Error('File name must be one Windows file-name component.');
+            }
+            if (!(W.roots || []).some(root => pathWithinRoot(dir, root))) {
+                throw new Error('Selected directory is outside the reported provider roots.');
+            }
+            return dir + '\\' + name;
+        }
+        async function createFileFromWorld() {
+            let path;
+            try { path = fileCreatePath(); }
+            catch (e) { setFileCreateStatus(e.message, 'err'); return; }
+            const button = $('filecreate-submit');
+            button.disabled = true; $('filecreate-open').disabled = true;
+            setFileCreateStatus('Creating through Core Policy…', '');
+            try {
+                const d = await POST('/filesystem/create', { path, content: $('filecreate-content').value }, 15000);
+                const inner = (d.result && d.result.result) || {};
+                if (inner.status !== 'Completed') {
+                    const detail = inner.detail || {};
+                    throw new Error(detail.error || ('action ' + (inner.status || 'failed')));
+                }
+                FileCreate.path = path;
+                setFileCreateStatus('Created on disk; waiting for Filesystem observation…', '');
+                await waitForCreatedFile(path);
+            } catch (e) {
+                FileCreate.path = ''; FileCreate.observedId = '';
+                setFileCreateStatus('Create failed: ' + trunc(e.message, 150), 'err');
+            } finally { button.disabled = false; }
+        }
+        async function waitForCreatedFile(path) {
+            for (let i = 0; i < 20; i++) {
+                await loadWorld();
+                const found = W.objects.find(o => o.type === 'File'
+                    && normWinPath(objPath(o)).toLowerCase() === normWinPath(path).toLowerCase());
+                if (found) {
+                    FileCreate.observedId = found.id;
+                    $('filecreate-open').disabled = false;
+                    setFileCreateStatus('Created and observed in Core: ' + path, 'ok');
+                    toast('File created and observed in World');
+                    return;
+                }
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            $('filecreate-open').disabled = false;
+            setFileCreateStatus('Created, but the File object has not appeared in Core yet.', 'err');
+        }
+        async function openCreatedFile() {
+            if (!FileCreate.path) return;
+            closeFileCreate();
+            if (FileCreate.observedId) selectObj(FileCreate.observedId, true);
+            await readFile(FileCreate.path);
+        }
+        async function activateTab(tid) {
+            if (!canBrowser('activate_tab')) { toast('Browser action unavailable or authority not loaded', true); return; }
+            try {
+                const d = await POST('/browser/activate', { target_id: tid }, 12000);
+                const st = ((d.result && d.result.result) || {}).status || 'sent';
+                toast('Tab: activate ' + st);
+                loadTabs();
+            } catch (e) { toast('Failed to activate: ' + trunc(e.message, 110), true); }
+        }
+        function relatedGraph() { if (W.selObj) { setMode('focus'); preset('detail'); } }
+        function quickSearch(q) { const i = $('q'); i.value = q; i.focus(); searchNow(q); }
+        async function runScan() {
+            const path = trimRoot(W.roots[0] || '');
+            if (!path) { toast('File system roots unknown — scanning unavailable', true); return; }
+            try {
+                const d = await POST('/filesystem/scan', { path: path }, 10000);
+                const inner = (d.result && d.result.result) || {};
+                const stt = inner.status || 'Started';
+                const aid = inner.action_id || '';
+                toast('Scan: ' + stt + (aid ? ' · job ' + aid.slice(0, 8) : ''));
+                if (aid) pollAction(aid);
+            } catch (e) { toast('Failed to start scan: ' + trunc(e.message, 110), true); }
+        }
+        async function pollAction(aid) {
+            for (let i = 0; i < 90; i++) {
+                await new Promise(r => setTimeout(r, 1000));
+                try {
+                    const d = await GET('/actions/' + aid, 8000);
+                    const inner = (d.result && d.result) || {};
+                    const res = inner.result || {};
+                    const stt = res.status || inner.status;
+                    if (stt && stt !== 'Requested' && stt !== 'Started') {
+                        toast('Scan completed: ' + stt);
+                        loadWorld();
+                        return;
+                    }
+                } catch (e) { break; }
+            }
+        }
+        function newMission() { window.open('/index.html', '_blank'); }
+
+        // ============ embedded browser panel (real CDP frames) ============
+        // Uses only the existing contract: tabs list + navigate/reload/
+        // new-tab/close/activate via bridge (Core Policy) plus a read-only
+        // `screenshot` provider action (Page.captureScreenshot). No fake
+        // page and no input injection: clicks inside the frame are not
+        // forwarded; the note in the panel says so honestly.
+        const B = { open: false, sel: null, objectId: null, tabs: [], timer: null, tabsTimer: null, fail: 0, last: null };
+
+        function openBrowser(tid, objectId = null) {
+            B.objectId = objectId;
+            B.open = true;
+            $('browser').classList.add('open');
+            if (tid) B.sel = tid;
+            bfRefresh(true);
+            if (!B.timer) B.timer = setInterval(bfShot, 1500);
+            if (!B.tabsTimer) B.tabsTimer = setInterval(bfRefresh, 5000);
+        }
+        function closeBrowser() {
+            B.open = false;
+            B.objectId = null;
+            $('browser').classList.remove('open');
+            clearInterval(B.timer); clearInterval(B.tabsTimer);
+            B.timer = B.tabsTimer = null;
+        }
+        async function bfRefresh() {
+            try {
+                const d = await GET('/browser/tabs', 10000);
+                applyBrowserMode(d.browser_mode, d.browser_capabilities);
+                const list = (d.result && d.result.result && d.result.result.detail && d.result.result.detail.tabs)
+                    || (d.result && d.result.result && d.result.result.tabs) || (d.result && d.result.tabs) || [];
+                B.tabs = list;
+                if (B.objectId) {
+                    // Never retarget a persisted snapshot to a different live
+                    // tab when its authority disappears during refresh.
+                    B.sel = browserLiveTarget(byId(B.objectId), list);
+                } else if (W.browserScoped) {
+                    B.sel = null; // Explicit canonical selection is required.
+                } else if (!B.sel || !list.some(t => t.target_id === B.sel)) {
+                    // Prefer a non-dashboard tab (same rule the provider
+                    // uses for its action target).
+                    const prefer = list.find(t => t.url && !/^https?:\/\/(127\.0\.0\.1|localhost):8765/.test(t.url)) || list[0];
+                    B.sel = prefer ? prefer.target_id : null;
+                }
+                bfRenderTabs(); bfShowCurrent();
+            } catch (e) {
+                applyBrowserMode(null, null);
+                if (B.objectId) { B.tabs = []; B.sel = null; }
+                $('btabs').innerHTML = '<span class="btab none">Tabs unavailable: ' + esc(trunc(e.message, 80)) + '</span>';
+                $('bstatus').textContent = 'CDP browser unavailable';
+            }
+        }
+        function bfRenderTabs() {
+            const box = $('btabs');
+            if (!B.tabs.length) { box.innerHTML = '<span class="btab none">CDP-вкладок нет — создайте вкладку</span>'; return; }
+            box.innerHTML = B.tabs.map(t => {
+                const active = t.target_id === B.sel ? ' active' : '';
+                const host = (t.url || '').replace(/^https?:\/\//, '').split('/')[0] || '—';
+                return '<span class="btab' + active + '" data-action="bfSelect" data-target="' + esc(t.target_id) + '" title="' + esc(t.url || '') + '">'
+                    + '🌐 <span class="tt">' + esc(trunc(t.title || host, 24)) + '</span>'
+                    + (!canBrowser('close_tab') ? '' : '<span class="x" data-action="bfCloseTab" data-target="' + esc(t.target_id) + '" title="Close tab">✕</span>') + '</span>';
+            }).join('');
+        }
+        function bfShowCurrent() {
+            const t = B.tabs.find(x => x.target_id === B.sel);
+            const u = $('burl');
+            if (document.activeElement !== u) u.value = t ? (t.url || '') : '';
+            bfStatus();
+        }
+        function bfStatus(extra) {
+            const t = B.tabs.find(x => x.target_id === B.sel);
+            const p = [];
+            p.push(t ? ('«' + trunc(t.title || 'untitled', 40) + '»') : 'tab not selected');
+            if (t && t.url) p.push(trunc(t.url, 60));
+            if (B.last) p.push('frame ' + B.last.kb + ' КБ · ' + B.last.at);
+            if (extra) p.push(extra);
+            $('bstatus').textContent = p.join(' · ');
+        }
+        function bfSelect(tid) {
+            const rows = B.tabs.filter(t => t.target_id === tid);
+            B.objectId = W.browserScoped && rows.length === 1 ? rows[0].tab_id : null;
+            B.sel = W.browserScoped ? browserLiveTarget(byId(B.objectId), B.tabs) : tid;
+            bfRenderTabs(); bfShowCurrent(); bfShot();
+        }
+        async function bfShot() {
+            if (!B.open || document.hidden || !B.sel || !canBrowser('screenshot')) return;
+            try {
+                if (W.browserScoped && (!B.objectId || browserLiveTarget(byId(B.objectId), B.tabs) !== B.sel)) throw new Error('Canonical live Browser authority unavailable');
+                const target = W.browserScoped ? { object_id: B.objectId, options: { format: 'jpeg', quality: 62 } } : { target_id: B.sel, format: 'jpeg', quality: 62 };
+                const d = await POST('/providers/browser/actions', { action: 'screenshot', target }, 20000);
+                const inner = (d.result && d.result.result) || d.result || {};
+                if (inner.status && inner.status !== 'Completed') {
+                    throw new Error('status ' + inner.status + ' ' + JSON.stringify(inner.detail || {}).slice(0, 110));
+                }
+                const data = ((inner.detail || inner).data) || '';
+                if (!data) throw new Error('empty frame');
+                const img = $('bframe');
+                img.src = 'data:image/jpeg;base64,' + data;
+                img.style.display = '';
+                $('bfempty').style.display = 'none';
+                B.fail = 0;
+                B.last = { kb: Math.round(data.length * 3 / 4 / 1024), at: new Date().toLocaleTimeString('ru-RU') };
+                bfStatus();
+            } catch (e) {
+                B.fail++;
+                bfStatus('frame failed (' + B.fail + '): ' + trunc(e.message, 70));
+                if (B.fail === 3 && B.timer) {
+                    // Back off after repeated failures instead of hammering.
+                    clearInterval(B.timer); B.timer = setInterval(bfShot, 8000);
+                    toast('Browser frames unavailable: ' + trunc(e.message, 100), true);
+                }
+            }
+        }
+        async function bfGo() {
+            if (!canBrowser('navigate')) return;
+            const url = $('burl').value.trim();
+            if (!url || !B.sel) { toast('Specify URL and tab', true); return; }
+            try {
+                // Route through the provider contract for state sync / history.
+                const d = await POST('/providers/browser/actions', { action: 'navigate', target: { url: url, target_id: B.sel } }, 30000);
+                const inner = (d.result && d.result.result) || {};
+                if (inner.status && inner.status !== 'Completed') throw new Error('status ' + inner.status);
+                toast('Navigate: ' + trunc(url, 60));
+                setTimeout(bfRefresh, 2500);
+            } catch (e) { toast('Переход не удался: ' + trunc(e.message, 110), true); }
+        }
+        async function bfReload() {
+            if (!canBrowser('reload')) return;
+            if (!B.sel) return;
+            try {
+                const d = await POST('/providers/browser/actions', { action: 'reload', target: { target_id: B.sel } }, 20000);
+                const inner = (d.result && d.result.result) || {};
+                if (inner.status && inner.status !== 'Completed') throw new Error('status ' + inner.status);
+                toast('Вкладка обновлена');
+            } catch (e) { toast('Обновление не удалось: ' + trunc(e.message, 110), true); }
+        }
+        async function bfShow() {
+            if (!canBrowser('activate_tab')) return;
+            if (!B.sel) return;
+            try {
+                await POST('/browser/activate', { target_id: B.sel }, 15000);
+                toast('Вкладка переключена в окне Chromium (видимый переход)');
+            } catch (e) { toast('Не удалось показать: ' + trunc(e.message, 110), true); }
+        }
+        async function bfCloseTab(tid) {
+            if (!canBrowser('close_tab')) return;
+            if (!confirm('Закрыть вкладку в браузере?')) return;
+            try {
+                await POST('/browser/close', { target_id: tid }, 15000);
+                if (B.sel === tid) B.sel = null;
+                setTimeout(bfRefresh, 400);
+            } catch (e) { toast('Закрытие не удалось: ' + trunc(e.message, 110), true); }
+        }
+        async function bfNewTab() {
+            if (!canBrowser('new_tab')) return;
+            const url = $('burl').value.trim() || 'about:blank';
+            try {
+                const d = await POST('/browser/new-tab', { url: url }, 30000);
+                const inner = (d.result && d.result.result) || {};
+                const tid = (inner.detail && inner.detail.target_id) || '';
+                if (tid) { B.objectId = null; B.sel = tid; }
+                toast('Вкладка создана: ' + trunc(url, 50));
+                setTimeout(bfRefresh, 600); setTimeout(bfShot, 1500);
+            } catch (e) { toast('Создание вкладки не удалось: ' + trunc(e.message, 110), true); }
+        }
+
+        // ============ search ============
+        function searchNow(q) {
+            const box = $('sdrop');
+            q = String(q || '').trim().toLowerCase();
+            if (!q) { box.style.display = 'none'; box.innerHTML = ''; return; }
+            const hits = [];
+            W.objects.forEach(o => {
+                const nm = String(objName(o)).toLowerCase();
+                if (nm.includes(q) && hits.length < 10) hits.push({ o: o, tag: o.type });
+            });
+            (W.missions || []).forEach(m => {
+                if (String(m.goal || '').toLowerCase().includes(q) && hits.length < 16) {
+                    const mo = W.objects.find(o => o.id === m.mission_id);
+                    if (mo) hits.push({ o: mo, tag: 'Mission · ' + m.state });
+                }
+            });
+            // BrowserTab objects already participate above with their canonical
+            // Core ID; live rows must not add a duplicate search result.
+            if (!hits.length) {
+                box.innerHTML = '<div class="sd-it">Ничего не найдено в Core по «' + esc(q) + '»</div>';
+                box.style.display = 'block';
+                return;
+            }
+            box.innerHTML = hits.map(h =>
+                '<div class="sd-it" data-action="selectObj" data-target="' + esc(h.o.id) + '" data-open="true" data-hide-drop="true">' + typeIcon(h.o.type || 'BrowserTab') + '<span>' + esc(trunc(h.o.title || objName(h.o), 46)) + '</span><span class="t">' + esc(h.tag) + '</span></div>').join('');
+            box.style.display = 'block';
+        }
+        function hideDrop() { const b = $('sdrop'); b.style.display = 'none'; }
+        function toggleSidebar() { $('sidebar').classList.toggle('open'); }
+
+        // ============ architecture panel (real data) ============
+        function openArch() {
+            const mkCards = arr => arr.map(c => '<div class="lcard"><b>' + c[0] + '</b><span>' + c[1] + '</span></div>').join('');
+            const comps = W.components || {};
+            const names = Object.keys(comps); const okn = names.filter(k => comps[k] && comps[k].connected).length;
+            const stc = {}; (W.missions || []).forEach(m => { stc[m.state] = (stc[m.state] || 0) + 1; });
+            const st = k => stc[k] || 0;
+            const actors = [...new Set((W.actions || []).map(r => r.actor))].filter(Boolean).length;
+            const provs = (W.providers || []).map(p => esc(p.id) + (p.capabilities && p.capabilities.length ? ' (' + esc(p.capabilities.join(', ')) + ')' : '')).join(' · ') || '—';
+            $('archbody').innerHTML =
+                '<div class="layer l1"><div><div class="lay-head"><span class="lay-num">1</span><div><div class="lay-title">System Layer</div><div class="lay-sub">Назначение, ограничения, внешние интерфейсы</div></div></div></div>'
+                + '<div class="lay-cards">' + mkCards([
+                    ['Mission', 'Develop SpaceOS: reliable foundation + live checks (17 suites PASS)'],
+                    ['Actors', actors + ' actors in action history'],
+                    ['Constraints', 'Policy Core · roots ' + esc(trimRoot(W.roots[0] || '—'))],
+                    ['Interfaces', 'HTTP API + WebSocket /ws · MCP stdio (20 tools)']
+                ]) + '</div></div>'
+                + '<div class="layer l2"><div><div class="lay-head"><span class="lay-num">2</span><div><div class="lay-title">Logical Layer</div><div class="lay-sub">Domain, services, models, business logic</div></div></div></div>'
+                + '<div class="lay-cards">' + mkCards([
+                    ['Core Domain', W.objects.length + ' objects · ' + W.relations.length + ' relations (space/world/object)'],
+                    ['Services', 'space-bridge: HTTP/WS + Mission orchestration'],
+                    ['Data Models', 'SQLite (single source of truth) · events append-only · seq cursor'],
+                    ['Business Logic', 'Mission: ' + st('running') + ' running · confirmations + evidence']
+                ]) + '</div></div>'
+                + '<div class="layer l3"><div><div class="lay-head"><span class="lay-num">3</span><div><div class="lay-title">Physical Layer</div><div class="lay-sub">Infrastructure and processes</div></div></div></div>'
+                + '<div class="lay-cards">' + mkCards([
+                    ['Applications', 'space-core · space-bridge · 2 providers · agent-demo'],
+                    ['Infrastructure', 'pipe \\\\.\\pipe\\spaceos-core (+2) · CDP :9222'],
+                    ['Providers', provs],
+                    ['Runtime', okn + '/' + names.length + ' components online (' + names.join(', ') + ')']
+                ]) + '</div></div>'
+                + '<div class="layer l4"><div><div class="lay-head"><span class="lay-num">4</span><div><div class="lay-title">Implementation Layer</div><div class="lay-sub">Code, configuration, artifacts, documentation</div></div></div></div>'
+                + '<div class="lay-cards">' + mkCards([
+                    ['Code', 'Crates: space-core, space-bridge, browser-provider, filesystem-provider, spacetrace'],
+                    ['Configuration', 'launch.ps1 · SPACEOS_ROOT/ALLOWED_ROOTS · MCP allow-list'],
+                    ['Artifacts', 'target\\release: space-core, space-bridge, 2 providers'],
+                    ['Documentation', 'docs: ARCHITECTURE · FOUNDATION_GATE · SPACETRACE_* · PROJECT_STATUS']
+                ]) + '</div></div>'
+                + '<div class="flowline"><b style="font-size:.78rem">Flow</b>'
+                + '<span class="fchip">🎯 Goals<small>' + st('created') + '</small></span><span class="farrow">→</span>'
+                + '<span class="fchip">📋 Plan<small>' + st('planned') + '</small></span><span class="farrow">→</span>'
+                + '<span class="fchip">⚙️ Execution<small>' + st('running') + '</small></span><span class="farrow">→</span>'
+                + '<span class="fchip">⚖️ Verification<small>' + st('verifying') + '</small></span><span class="farrow">→</span>'
+                + '<span class="fchip">✅ Completed<small>' + st('completed') + '</small></span><span class="farrow">→</span>'
+                + '<span class="fchip">🟢 Operation<small>' + okn + '/' + names.length + '</small></span>'
+                + '</div>'
+                + '<div class="arch-note">Live values refreshed via Core polling (objects, relations, Mission states, components, providers, roots). Layer 4 = verified facts from last run (run_tests 17/17 · verify 35/35 · MCP 13/13). Panel matches four-layer model from UI_custom (ASD-STE100).</div>';
+            $('arch').classList.add('open');
+        }
+        function closeArch() { $('arch').classList.remove('open'); }
+
+        // ============ Semantic Object/Relation Editor ============
+        // Per-modal in-flight guards prevent duplicate submissions
+        // from rapid keyboard or mouse events before the first request completes.
+        const SemObjCreate = { editingId: null, submitting: false };
+        const SemObjEdit = { editingId: null, submitting: false };
+        const SemObjRelCreate = { submitting: false };
+        // Focus restoration: element that had focus before a modal opened.
+        let ModalFocusRestore = null;
+        // Currently open modal id (for focus trapping).
+        let ModalOpenId = null;
+
+        // Check if semantic world is configured
+        async function checkSemanticWorld() {
+            try {
+                const d = await GET('/context', 10000);
+                return d.context?.semantic_world_id || null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function openSemObjCreate() {
+            ModalFocusRestore = document.activeElement || document.body;
+            ModalOpenId = 'semobjcreate';
+            $('semobjcreate').classList.add('open');
+            $('semobjcreate-type').value = '';
+            $('semobjcreate-name').value = '';
+            $('semobjcreate-props').value = '';
+            setSemObjCreateStatus('Enter object type and optional properties.');
+            setTimeout(() => $('semobjcreate-type').focus(), 0);
+        }
+        function closeSemObjCreate() {
+            if (SemObjCreate.submitting) return; // avoid closing during pending mutation
+            $('semobjcreate').classList.remove('open');
+            ModalOpenId = null;
+            if (ModalFocusRestore) { ModalFocusRestore.focus(); ModalFocusRestore = null; }
+        }
+        function setSemObjCreateStatus(text, cls) {
+            const el = $('semobjcreate-status');
+            el.textContent = text;
+            el.className = cls || '';
+        }
+        async function createSemanticObject() {
+            if (SemObjCreate.submitting) return;
+            // The in-flight guard is acquired SYNCHRONOUSLY, before the first
+            // await. Acquiring it after an await lets two synchronous
+            // submissions both pass the check above and both issue a request.
+            SemObjCreate.submitting = true;
+            try {
+            const type = $('semobjcreate-type').value.trim();
+            const name = $('semobjcreate-name').value.trim();
+            const propsText = $('semobjcreate-props').value.trim();
+            if (!type) { setSemObjCreateStatus('Object type is required.', 'err'); return; }
+            let properties = {};
+            if (propsText) {
+                try { properties = JSON.parse(propsText); }
+                catch (e) { setSemObjCreateStatus('Invalid JSON in properties: ' + e.message, 'err'); return; }
+            }
+            if (properties === null || typeof properties !== 'object' || Array.isArray(properties)) {
+                setSemObjCreateStatus('Custom Properties must be a JSON object, for example {"description":"My note"}.', 'err');
+                return;
+            }
+            const semanticWorld = await checkSemanticWorld();
+            if (!semanticWorld) {
+                setSemObjCreateStatus('Semantic world not configured (SPACEOS_SEMANTIC_WORLD_ID)', 'err');
+                return;
+            }
+            if (name) properties.name = name;
+            const button = $('semobjcreate-submit');
+            button.disabled = true;
+            button.textContent = 'Creating…';
+            setSemObjCreateStatus('Creating through Semantic API…', '');
+            try {
+                const d = await POST('/semantic/objects', {
+                    world_id: semanticWorld,
+                    object_type: type,
+                    properties: properties,
+                    correlation_id: 'sem-create-' + Date.now() + '-' + Math.random().toString(36).slice(2)
+                }, 15000);
+                const obj = d.object || d.result?.object;
+                if (obj) {
+                    setSemObjCreateStatus('Created: ' + obj.id, 'ok');
+                    await loadWorld();
+                    setTimeout(() => { closeSemObjCreate(); selectObj(obj.id, true); }, 500);
+                } else {
+                    throw new Error('No object in response: ' + JSON.stringify(d));
+                }
+            } catch (e) {
+                setSemObjCreateStatus('Create failed: ' + trunc(e.message, 150), 'err');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Create Object';
+            }
+            } finally {
+                SemObjCreate.submitting = false;
+            }
+        }
+
+        function openSemObjEdit(oid) {
+            const o = byId(oid);
+            if (!o) { toast('Object not found', true); return; }
+            // Check if object is semantic-owned (provider_id === space-world-user)
+            if (o.provider_id !== 'space-world-user') {
+                toast('Only semantic-owned objects can be edited here', true);
+                return;
+            }
+            ModalFocusRestore = document.activeElement || document.body;
+            ModalOpenId = 'semobjedit';
+            SemObjEdit.editingId = oid;
+            $('semobjedit-id').value = o.id;
+            $('semobjedit-type').value = o.type;
+            $('semobjedit-name').value = o.properties?.name || '';
+            // Show all properties except world_id
+            const props = { ...o.properties };
+            delete props.world_id;
+            $('semobjedit-props').value = JSON.stringify(props, null, 2);
+            $('semobjedit').classList.add('open');
+            setTimeout(() => $('semobjedit-name').focus(), 0);
+        }
+        function closeSemObjEdit() {
+            if (SemObjEdit.submitting) return; // avoid closing during pending mutation
+            $('semobjedit').classList.remove('open');
+            SemObjEdit.editingId = null;
+            ModalOpenId = null;
+            if (ModalFocusRestore) { ModalFocusRestore.focus(); ModalFocusRestore = null; }
+        }
+        function setSemObjEditStatus(text, cls) {
+            const el = $('semobjedit-status');
+            el.textContent = text;
+            el.className = cls || '';
+        }
+        async function saveSemanticObject() {
+            if (SemObjEdit.submitting) return;
+            // Guard acquired synchronously, before the first await.
+            SemObjEdit.submitting = true;
+            try {
+            const oid = SemObjEdit.editingId;
+            if (!oid) { setSemObjEditStatus('No object being edited', 'err'); return; }
+            const name = $('semobjedit-name').value.trim();
+            const propsText = $('semobjedit-props').value.trim();
+            let properties = {};
+            if (propsText) {
+                try { properties = JSON.parse(propsText); }
+                catch (e) { setSemObjEditStatus('Invalid JSON: ' + e.message, 'err'); return; }
+            }
+            if (name) properties.name = name;
+            // Don't allow world_id to be changed
+            delete properties.world_id;
+            const button = $('semobjedit-submit');
+            button.disabled = true;
+            button.textContent = 'Saving…';
+            setSemObjEditStatus('Saving through Semantic API…', '');
+            try {
+                const d = await POST('/semantic/objects/' + encodeURIComponent(oid), {
+                    object_id: oid,
+                    world_id: (await checkSemanticWorld()) || '',
+                    properties_patch: properties,
+                    correlation_id: 'sem-patch-' + Date.now() + '-' + Math.random().toString(36).slice(2)
+                }, 15000, 'PATCH');
+                const obj = d.object || d.result?.object;
+                if (obj) {
+                    setSemObjEditStatus('Saved: ' + obj.id, 'ok');
+                    await loadWorld();
+                    setTimeout(() => { closeSemObjEdit(); selectObj(obj.id, true); }, 500);
+                } else {
+                    throw new Error('No object in response: ' + JSON.stringify(d));
+                }
+            } catch (e) {
+                setSemObjEditStatus('Save failed: ' + trunc(e.message, 150), 'err');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Save Changes';
+            }
+            } finally {
+                SemObjEdit.submitting = false;
+            }
+        }
+
+        function openSemRelCreate() {
+            ModalFocusRestore = document.activeElement || document.body;
+            ModalOpenId = 'semrelcreate';
+            // Populate source/target selects with semantic-owned objects only
+            const sourceSel = $('semrelcreate-source');
+            const targetSel = $('semrelcreate-target');
+            sourceSel.replaceChildren();
+            targetSel.replaceChildren();
+            const semObjs = W.objects.filter(o => o.provider_id === 'space-world-user');
+            semObjs.forEach(o => {
+                const opt1 = document.createElement('option');
+                opt1.value = o.id; opt1.textContent = (o.properties?.name || objName(o)) + ' (' + o.type + ')';
+                sourceSel.appendChild(opt1);
+                const opt2 = document.createElement('option');
+                opt2.value = o.id; opt2.textContent = (o.properties?.name || objName(o)) + ' (' + o.type + ')';
+                targetSel.appendChild(opt2);
+            });
+            if (!sourceSel.options.length) {
+                const opt = document.createElement('option');
+                opt.textContent = 'No semantic objects available'; opt.value = '';
+                sourceSel.appendChild(opt);
+                targetSel.appendChild(opt.cloneNode(true));
+            }
+            $('semrelcreate-props').value = '{"note": ""}';
+            $('semrelcreate').classList.add('open');
+        }
+        function closeSemRelCreate() {
+            if (SemObjRelCreate.submitting) return; // avoid closing during pending mutation
+            $('semrelcreate').classList.remove('open');
+            ModalOpenId = null;
+            if (ModalFocusRestore) { ModalFocusRestore.focus(); ModalFocusRestore = null; }
+        }
+        function setSemRelCreateStatus(text, cls) {
+            const el = $('semrelcreate-status');
+            el.textContent = text;
+            el.className = cls || '';
+        }
+        async function createSemanticRelation() {
+            if (SemObjRelCreate.submitting) return;
+            // Guard acquired synchronously, before the first await.
+            SemObjRelCreate.submitting = true;
+            try {
+            const semanticWorld = await checkSemanticWorld();
+            if (!semanticWorld) {
+                setSemRelCreateStatus('Semantic world not configured', 'err');
+                return;
+            }
+            const source = $('semrelcreate-source').value;
+            const target = $('semrelcreate-target').value;
+            const propsText = $('semrelcreate-props').value.trim();
+            if (!source) { setSemRelCreateStatus('Select source object', 'err'); return; }
+            if (!target) { setSemRelCreateStatus('Select target object', 'err'); return; }
+            if (source === target) { setSemRelCreateStatus('Source and target cannot be the same (self-relation not allowed)', 'err'); return; }
+            let properties = {};
+            if (propsText) {
+                try { properties = JSON.parse(propsText); }
+                catch (e) { setSemRelCreateStatus('Invalid JSON: ' + e.message, 'err'); return; }
+            }
+            const button = $('semrelcreate-submit');
+            button.disabled = true;
+            button.textContent = 'Creating…';
+            setSemRelCreateStatus('Creating through Semantic API…', '');
+            try {
+                const d = await POST('/semantic/relations', {
+                    world_id: (await checkSemanticWorld()) || '',
+                    source_id: source,
+                    target_id: target,
+                    relation_type: 'related_to',
+                    properties: properties,
+                    correlation_id: 'sem-rel-' + Date.now() + '-' + Math.random().toString(36).slice(2)
+                }, 15000);
+                const rel = d.relation || d.result?.relation;
+                if (rel) {
+                    setSemRelCreateStatus('Created: ' + rel.id, 'ok');
+                    await loadWorld();
+                    setTimeout(() => { closeSemRelCreate(); }, 500);
+                } else {
+                    throw new Error('No relation in response: ' + JSON.stringify(d));
+                }
+            } catch (e) {
+                setSemRelCreateStatus('Create failed: ' + trunc(e.message, 150), 'err');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Create Relation';
+            }
+            } finally {
+                SemObjRelCreate.submitting = false;
+            }
+        }
+
+
+        // ============ clock / init ============
+        function tickClock() {
+            const d = new Date();
+            $('clock').textContent = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        function init() {
+            buildStars();
+            tickClock(); setInterval(tickClock, 1000);
+            connectWs();
+            const bgi = $('bg');
+            [['#1653d8', 460, 55, 20], ['#7c3aed', 420, 12, 68], ['#0ea5e9', 360, 78, 55]].forEach(v => {
+                const d = document.createElement('div'); d.classList.add('neb');
+                d.style.width = v[1] + 'px'; d.style.height = v[1] + 'px';
+                d.style.left = v[2] + '%'; d.style.top = v[3] + '%';
+                d.style.background = 'radial-gradient(circle, ' + v[0] + '26, transparent 60%)';
+                bgi.appendChild(d);
+            });
+            const qi = $('q');
+            qi.addEventListener('input', () => searchNow(qi.value));
+            qi.addEventListener('keydown', e => { if (e.key === 'Enter') searchNow(qi.value); });
+            document.addEventListener('click', e => {
+                if (!e.target.closest('.srch') && !e.target.closest('#sdrop')) hideDrop();
+            });
+            document.addEventListener('click', handleDelegatedClick);
+            // Keyboard shortcuts for modal dialogs
+            document.addEventListener('keydown', e => {
+                // Modal focus containment: Tab / Shift+Tab cycles within the open modal.
+                if (ModalOpenId && e.key === 'Tab') {
+                    const modal = $(ModalOpenId);
+                    const focusable = Array.from(modal.querySelectorAll(
+                        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                    ));
+                    if (focusable.length > 0) {
+                        e.preventDefault();
+                        const idx = focusable.indexOf(document.activeElement);
+                        let next = e.shiftKey ? idx - 1 : idx + 1;
+                        if (next < 0) next = focusable.length - 1;
+                        if (next >= focusable.length) next = 0;
+                        focusable[next].focus();
+                    }
+                }
+                if (e.key === 'Escape') {
+                    if ($('semobjcreate').classList.contains('open')) closeSemObjCreate();
+                    if ($('semobjedit').classList.contains('open')) closeSemObjEdit();
+                    if ($('semrelcreate').classList.contains('open')) closeSemRelCreate();
+                    if ($('agentpanel').classList.contains('open')) closeAgentPanel();
+                    if ($('filecreate').classList.contains('open')) closeFileCreate();
+                    if ($('reader').classList.contains('open')) closeReader();
+                    if ($('arch').classList.contains('open')) closeArch();
+                    if ($('browser').classList.contains('open')) closeBrowser();
+                }
+                if (e.key === 'Enter') {
+                    // Never submit from a textarea (newline), during IME composition,
+                    // or with modifier keys.
+                    if (e.target && e.target.tagName === 'TEXTAREA') return;
+                    if (e.isComposing) return;
+                    if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
+                    if ($('semobjcreate').classList.contains('open')) createSemanticObject();
+                    if ($('semobjedit').classList.contains('open')) saveSemanticObject();
+                    if ($('semrelcreate').classList.contains('open')) createSemanticRelation();
+                }
+            });
+            loadWorld(); loadSide(); loadBrowserAuthority(); loadTabs();
+            setInterval(loadWorld, 20000);
+            setInterval(loadSide, 15000);
+            // Only poll tabs when browser panel is closed; when open, the panel
+            // runs its own bfRefresh every 5s which already calls /browser/tabs.
+            setInterval(() => { if (!B.open) loadTabs(); }, 10000);
+            refit();
+            renderSidebar();
+        }
+        init();
+</script>
+</body>
+</html>

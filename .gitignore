@@ -1,0 +1,30 @@
+target/
+runtime/*.db
+runtime/*.log
+runtime/*.err
+runtime/*.json
+runtime/*.token
+runtime/*.db-wal
+runtime/*.db-shm
+runtime/*.db-journal
+
+# Synthetic test state: databases, credentials, browser profiles and run evidence
+/test-tmp/
+
+# Local runtime artifacts and evidence (never source; kept on disk)
+CRASH/
+chrome/
+chrome-profile/
+data/
+logs/
+target-agent-staging/
+
+# Stray dumps once written to the repo root
+core.db
+core.db-shm
+core.db-wal
+/core.db-journal
+core.err
+core.log
+provider.err
+provider.log
